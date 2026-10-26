@@ -22,6 +22,12 @@ service cloud.firestore {
               'createdAt'];
     }
 
+    // Campos de búsqueda y orden (título y autor en minúsculas y sin tildes).
+    // Son opcionales por ahora; el cliente los calcula.
+    function sortKeys() {
+      return ['titleSort', 'authorSort'];
+    }
+
     function hasValidProductValues(data) {
       return data.title is string && data.title.size() >= 1 && data.title.size() <= 200
              && data.author is string && data.author.size() >= 1 && data.author.size() <= 200
@@ -34,6 +40,13 @@ service cloud.firestore {
              && data.publisher is string && data.publisher.size() >= 1 && data.publisher.size() <= 200
              && data.publicationYear is int
              && data.firstEdition is bool;
+    }
+
+    function hasValidSortValues(data) {
+      return (!('titleSort' in data)
+              || (data.titleSort is string && data.titleSort.size() <= 200))
+             && (!('authorSort' in data)
+                 || (data.authorSort is string && data.authorSort.size() <= 200));
     }
 
     match /users/{userId} {
@@ -58,15 +71,17 @@ service cloud.firestore {
       allow read: if true;
 
       allow create: if isAdmin()
-                    && request.resource.data.keys().hasOnly(productKeys())
+                    && request.resource.data.keys().hasOnly(productKeys().concat(sortKeys()))
                     && request.resource.data.keys().hasAll(productKeys())
                     && hasValidProductValues(request.resource.data)
+                    && hasValidSortValues(request.resource.data)
                     && request.resource.data.createdAt == request.time;
 
       allow update: if isAdmin()
                     && request.resource.data.keys().hasAll(productKeys())
-                    && request.resource.data.keys().hasOnly(productKeys().concat(['id']))
+                    && request.resource.data.keys().hasOnly(productKeys().concat(sortKeys()).concat(['id']))
                     && hasValidProductValues(request.resource.data)
+                    && hasValidSortValues(request.resource.data)
                     && (!('id' in request.resource.data)
                         || request.resource.data.id == productId)
                     && request.resource.data.createdAt == resource.data.createdAt;
