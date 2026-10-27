@@ -29,6 +29,44 @@
     list-style: none;
 }
 
+/* Botón "Ver más libros" (paginación) */
+.catalog__more {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.catalog__more-button {
+    min-height: 44px;
+    padding: 0 28px;
+    border: 1px solid #1f3528;
+    border-radius: 4px;
+    background-color: #1f3528;
+    color: #f7f3ec;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.catalog__more-button:hover:not(:disabled) {
+    background-color: #2d4937;
+}
+
+.catalog__more-button:focus-visible {
+    outline: 3px solid #b58a4a;
+    outline-offset: 2px;
+}
+
+.catalog__more-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.catalog__more-error {
+    margin: 24px 0 0;
+    color: #8a2d2d;
+    text-align: center;
+}
+
 @media (min-width: 768px) {
     .catalog {
         padding: 32px 32px 56px;

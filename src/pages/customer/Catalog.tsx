@@ -2,20 +2,25 @@ import { useEffect, useState } from "react";
 import type { JSX } from "react";
 
 import ProductCard from "../../components/products/ProductCard";
-import { getProducts } from "../../services/productService";
+import { getProductsPage } from "../../services/productService";
+import type { ProductsCursor } from "../../services/productService";
 import type { Product } from "../../types/product";
 import "./Catalog.css";
 
 function Catalog(): JSX.Element {
     const [products, setProducts] = useState<Product[]>([]);
+    const [nextCursor, setNextCursor] = useState<ProductsCursor | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState("");
+    const [loadMoreError, setLoadMoreError] = useState("");
 
     useEffect(() => {
-        async function loadProducts() {
+        async function loadFirstPage() {
             try {
-                const result = await getProducts();
-                setProducts(result);
+                const page = await getProductsPage();
+                setProducts(page.products);
+                setNextCursor(page.nextCursor);
             } catch (error) {
                 console.error("Error al cargar los productos:", error);
                 setError("No pudimos cargar los libros. Intentá nuevamente.");
@@ -24,8 +29,30 @@ function Catalog(): JSX.Element {
             }
         }
 
-        loadProducts();
+        loadFirstPage();
     }, []);
+
+    async function handleLoadMore(): Promise<void> {
+        if (!nextCursor) {
+            return;
+        }
+
+        setLoadingMore(true);
+        setLoadMoreError("");
+
+        try {
+            const page = await getProductsPage(nextCursor);
+            setProducts((current) => [...current, ...page.products]);
+            setNextCursor(page.nextCursor);
+        } catch (error) {
+            console.error("Error al cargar más productos:", error);
+            setLoadMoreError(
+                "No pudimos cargar más libros. Intentá nuevamente."
+            );
+        } finally {
+            setLoadingMore(false);
+        }
+    }
 
     if (loading) {
         return (
@@ -63,6 +90,25 @@ function Catalog(): JSX.Element {
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {loadMoreError && (
+                <p role="alert" className="catalog__more-error">
+                    {loadMoreError}
+                </p>
+            )}
+
+            {nextCursor && (
+                <div className="catalog__more">
+                    <button
+                        type="button"
+                        className="catalog__more-button"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                    >
+                        {loadingMore ? "Cargando..." : "Ver más libros"}
+                    </button>
+                </div>
             )}
         </section>
     );
