@@ -1,10 +1,9 @@
 import { createContext } from "react";
-import type { User } from "firebase/auth";
 
-import type { UserProfile, UserRole } from "../types/user";
+import type { AuthUser, UserProfile, UserRole } from "../types/user";
 
 export interface AuthContextType {
-    user: User | null;
+    user: AuthUser | null;
     profile: UserProfile | null;
     role: UserRole | null;
     loading: boolean;

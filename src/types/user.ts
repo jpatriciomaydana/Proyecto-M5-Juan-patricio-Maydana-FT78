@@ -8,3 +8,9 @@ export interface UserProfile {
     createdAt: Date;
 }
 
+// Usuario autenticado tal como lo ve la app. Propio, sin depender
+// del tipo User de Firebase: authService.ts hace la conversión.
+export interface AuthUser {
+    uid: string;
+    email: string | null;
+}

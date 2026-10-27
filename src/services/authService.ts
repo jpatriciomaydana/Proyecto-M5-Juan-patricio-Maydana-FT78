@@ -1,5 +1,6 @@
 import {
     createUserWithEmailAndPassword,
+    onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut,
 } from "firebase/auth";
@@ -12,12 +13,27 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "./firebase";
-import type { UserProfile } from "../types/user";
+import type { AuthUser, UserProfile } from "../types/user";
 
+// Escucha los cambios de sesión y entrega un AuthUser propio (o null).
+// Devuelve la función para cancelar la suscripción.
+export function subscribeToAuthChanges(
+    callback: (user: AuthUser | null) => void | Promise<void>,
+): () => void {
+    return onAuthStateChanged(auth, (firebaseUser) => {
+        void callback(
+            firebaseUser
+                ? { uid: firebaseUser.uid, email: firebaseUser.email }
+                : null,
+        );
+    });
+}
+
+// Devuelve el uid del usuario recién creado.
 export async function registerUser(
     email: string,
     password: string,
-): Promise<void> {
+): Promise<string> {
     const credential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -29,6 +45,8 @@ export async function registerUser(
         role: "customer",
         createdAt: serverTimestamp(),
     });
+
+    return credential.user.uid;
 }
 
 export async function loginUser(

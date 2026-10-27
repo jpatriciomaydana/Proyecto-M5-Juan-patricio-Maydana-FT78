@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import type { JSX, ReactNode } from "react";
-import type { User } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
 
 import {
     getUserProfile,
     loginUser,
     logoutUser,
     registerUser,
+    subscribeToAuthChanges,
 } from "../services/authService";
-import { auth } from "../services/firebase";
-import type { UserProfile } from "../types/user";
+import type { AuthUser, UserProfile } from "../types/user";
 import { AuthContext } from "./authContextObject";
 
 interface AuthProviderProps {
@@ -18,12 +16,12 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = subscribeToAuthChanges(async (currentUser) => {
             setUser(currentUser);
 
             if (!currentUser) {
@@ -55,13 +53,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         email: string,
         password: string,
     ): Promise<void> {
-        await registerUser(email, password);
+        const uid = await registerUser(email, password);
 
         // El perfil recién se guardó: volvemos a leerlo porque
-        // onAuthStateChanged pudo ejecutarse antes de que existiera.
-        if (auth.currentUser) {
-            setProfile(await getUserProfile(auth.currentUser.uid));
-        }
+        // el listener de sesión pudo ejecutarse antes de que existiera.
+        setProfile(await getUserProfile(uid));
     }
 
     async function logout(): Promise<void> {
