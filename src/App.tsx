@@ -4,7 +4,7 @@ import "./App.css";
 
 import MainLayout from "./components/layout/MainLayout";
 import AdminLayout from "./components/layout/AdminLayout";
-import ProtectedRoute from "./routes/protectedRoute";
+import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminRoute from "./routes/AdminRoute";
 
 import Home from "./pages/customer/Home";
