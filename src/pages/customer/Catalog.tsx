@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
 
+import EmptyState from "../../components/common/EmptyState";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Spinner from "../../components/common/Spinner";
 import ProductCard from "../../components/products/ProductCard";
 import { getProductsPage } from "../../services/productService";
 import type { ProductsCursor } from "../../services/productService";
@@ -58,7 +61,7 @@ function Catalog(): JSX.Element {
         return (
             <section className="catalog">
                 <h1 className="catalog__title">Catálogo</h1>
-                <p className="catalog__intro">Cargando libros...</p>
+                <Spinner label="Cargando libros..." />
             </section>
         );
     }
@@ -67,9 +70,7 @@ function Catalog(): JSX.Element {
         return (
             <section className="catalog">
                 <h1 className="catalog__title">Catálogo</h1>
-                <p role="alert" className="catalog__intro">
-                    {error}
-                </p>
+                <ErrorMessage message={error} />
             </section>
         );
     }
@@ -79,9 +80,10 @@ function Catalog(): JSX.Element {
             <h1 className="catalog__title">Catálogo</h1>
 
             {products.length === 0 ? (
-                <p className="catalog__intro">
-                    Todavía no hay libros disponibles.
-                </p>
+                <EmptyState
+                    title="Todavía no hay libros disponibles"
+                    description="Volvé a visitarnos pronto: estamos sumando títulos."
+                />
             ) : (
                 <ul className="catalog__grid">
                     {products.map((product) => (
@@ -92,11 +94,7 @@ function Catalog(): JSX.Element {
                 </ul>
             )}
 
-            {loadMoreError && (
-                <p role="alert" className="catalog__more-error">
-                    {loadMoreError}
-                </p>
-            )}
+            {loadMoreError && <ErrorMessage message={loadMoreError} />}
 
             {nextCursor && (
                 <div className="catalog__more">
