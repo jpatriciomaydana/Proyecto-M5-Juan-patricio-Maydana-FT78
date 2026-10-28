@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { JSX, ReactNode } from "react";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
 
@@ -8,9 +8,9 @@ interface AppProvidersProps {
 
 // Agrupa todos los providers de contexto de la app en un solo lugar.
 // El orden importa: los de afuera están disponibles para los de adentro
-// (CartProvider puede usar la sesión de AuthProvider).
+// (CartProvider usa la sesión de AuthProvider).
 // Cuando haya un contexto nuevo, se agrega acá y main.tsx no cambia.
-function AppProviders({ children }: AppProvidersProps) {
+function AppProviders({ children }: AppProvidersProps): JSX.Element {
     return (
         <AuthProvider>
             <CartProvider>{children}</CartProvider>
