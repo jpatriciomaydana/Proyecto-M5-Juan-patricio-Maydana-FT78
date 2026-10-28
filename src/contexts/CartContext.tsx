@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { JSX, ReactNode } from "react";
 
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -14,6 +14,7 @@ import type { CartLine } from "../services/cartService";
 import type { CartItem } from "../types/cart";
 import type { Product } from "../types/product";
 import { CartContext } from "./cartContextObject";
+import { cartReducer, initialCartState } from "./cartReducer";
 
 interface CartProviderProps {
     children: ReactNode;
@@ -125,9 +126,10 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     const uid = user?.uid ?? null;
     const ownerKey = uid ?? "guest";
 
-    const [items, setItems] = useState<CartItem[]>([]);
-    // De quién es el carrito que hay en "items" (uid o "guest").
-    const [loadedOwner, setLoadedOwner] = useState<string | null>(null);
+    // Las reglas para modificar el carrito viven en cartReducer.
+    // "loadedOwner" dice de quién es el carrito que hay en "items".
+    const [state, dispatch] = useReducer(cartReducer, initialCartState);
+    const { items, loadedOwner } = state;
 
     // Solo se guarda si la última lectura salió bien: un error de red
     // nunca debe pisar el carrito real con uno vacío.
@@ -163,8 +165,11 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
             canSave.current = result.ok;
             lastSaved.current = JSON.stringify(toCartLines(result.items));
-            setItems(result.items);
-            setLoadedOwner(ownerKey);
+            dispatch({
+                type: "LOADED",
+                items: result.items,
+                owner: ownerKey,
+            });
         });
 
         return () => {
@@ -209,101 +214,100 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         };
     }, [items, loading, uid]);
 
-    // Valores derivados: se calculan en cada render a partir de items.
-    const total = items.reduce(
-        (sum, item) => sum + item.product.price * item.quantity,
-        0,
+    // Valores derivados: useMemo evita recalcularlos si "items" no cambió.
+    const total = useMemo(
+        () =>
+            items.reduce(
+                (sum, item) => sum + item.product.price * item.quantity,
+                0,
+            ),
+        [items],
     );
-    const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+    const itemCount = useMemo(
+        () => items.reduce((sum, item) => sum + item.quantity, 0),
+        [items],
+    );
 
-    function getQuantity(productId: string): number {
-        const item = items.find((entry) => entry.product.id === productId);
-        return item ? item.quantity : 0;
-    }
+    const getQuantity = useCallback(
+        (productId: string): number => {
+            const item = items.find((entry) => entry.product.id === productId);
+            return item ? item.quantity : 0;
+        },
+        [items],
+    );
 
-    function addItem(product: Product): void {
-        if (loading || product.stock <= 0) {
-            return;
-        }
-
-        setItems((prev) => {
-            const existing = prev.find(
-                (item) => item.product.id === product.id,
-            );
-
-            if (!existing) {
-                return [...prev, { product, quantity: 1 }];
+    // Las funciones solo avisan al reducer qué pasó. La guarda "loading"
+    // se queda acá porque depende del dueño del carrito, que el reducer no conoce.
+    const addItem = useCallback(
+        (product: Product): void => {
+            if (loading) {
+                return;
             }
 
-            // Nunca superamos el stock del producto.
-            const quantity = Math.min(existing.quantity + 1, product.stock);
+            dispatch({ type: "ADD_ITEM", product });
+        },
+        [loading],
+    );
 
-            return prev.map((item) =>
-                item.product.id === product.id
-                    ? { ...item, quantity }
-                    : item,
-            );
-        });
-    }
+    const updateQuantity = useCallback(
+        (productId: string, quantity: number): void => {
+            if (loading) {
+                return;
+            }
 
-    function updateQuantity(productId: string, quantity: number): void {
+            dispatch({ type: "UPDATE_QUANTITY", productId, quantity });
+        },
+        [loading],
+    );
+
+    const removeItem = useCallback(
+        (productId: string): void => {
+            if (loading) {
+                return;
+            }
+
+            dispatch({ type: "REMOVE_ITEM", productId });
+        },
+        [loading],
+    );
+
+    const clearCart = useCallback((): void => {
         if (loading) {
             return;
         }
 
-        const wanted = Math.floor(quantity);
+        dispatch({ type: "CLEAR_CART" });
+    }, [loading]);
 
-        // Cantidad cero (o inválida): equivale a quitar el producto.
-        if (!Number.isFinite(wanted) || wanted <= 0) {
-            removeItem(productId);
-            return;
-        }
-
-        setItems((prev) =>
-            prev.map((item) =>
-                item.product.id === productId
-                    ? {
-                        ...item,
-                        quantity: Math.min(wanted, item.product.stock),
-                    }
-                    : item,
-            ),
-        );
-    }
-
-    function removeItem(productId: string): void {
-        if (loading) {
-            return;
-        }
-
-        setItems((prev) =>
-            prev.filter((item) => item.product.id !== productId),
-        );
-    }
-
-    function clearCart(): void {
-        if (loading) {
-            return;
-        }
-
-        setItems([]);
-    }
+    // useMemo en el value: sin él, el objeto es nuevo en cada render
+    // y todos los componentes que usan useCart() se re-renderizarían
+    // aunque nada del carrito haya cambiado.
+    const value = useMemo(
+        () => ({
+            items,
+            total,
+            itemCount,
+            loading,
+            getQuantity,
+            addItem,
+            updateQuantity,
+            removeItem,
+            clearCart,
+        }),
+        [
+            items,
+            total,
+            itemCount,
+            loading,
+            getQuantity,
+            addItem,
+            updateQuantity,
+            removeItem,
+            clearCart,
+        ],
+    );
 
     return (
-        <CartContext.Provider
-            value={{
-                items,
-                total,
-                itemCount,
-                loading,
-                getQuantity,
-                addItem,
-                updateQuantity,
-                removeItem,
-                clearCart,
-            }}
-        >
-            {children}
-        </CartContext.Provider>
+        <CartContext.Provider value={value}>{children}</CartContext.Provider>
     );
 }
