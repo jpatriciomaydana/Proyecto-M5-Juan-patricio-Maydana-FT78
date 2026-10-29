@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
 import { CartIcon } from "../../components/common/Icons";
+import Spinner from "../../components/common/Spinner";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useCart } from "../../hooks/useCart";
 import { createOrder } from "../../services/orderService";
@@ -165,10 +166,7 @@ function Cart(): JSX.Element {
         return (
             <section className="cart-page">
                 <h1 className="cart-page__title">Carrito</h1>
-
-                <div className="cart-empty" role="status">
-                    <p className="cart-empty__text">Cargando carrito…</p>
-                </div>
+                <Spinner label="Cargando carrito…" />
             </section>
         );
     }
