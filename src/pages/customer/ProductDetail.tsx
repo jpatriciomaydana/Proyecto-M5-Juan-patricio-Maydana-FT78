@@ -5,6 +5,9 @@ import { Link, useParams } from "react-router-dom";
 import { getProductById } from "../../services/productService";
 import type { Product } from "../../types/product";
 import AddToCartButton from "../../components/cart/AddToCartButton";
+import EmptyState from "../../components/common/EmptyState";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Spinner from "../../components/common/Spinner";
 import "./ProductDetail.css";
 
 const priceFormatter = new Intl.NumberFormat("es-AR", {
@@ -56,7 +59,7 @@ function ProductDetail(): JSX.Element {
     if (loading) {
         return (
             <section className="detail">
-                <p>Cargando libro...</p>
+                <Spinner label="Cargando libro..." />
             </section>
         );
     }
@@ -64,10 +67,12 @@ function ProductDetail(): JSX.Element {
     if (error) {
         return (
             <section className="detail">
-                <p role="alert">{error}</p>
-                <Link to="/catalogo" className="detail__back">
-                    Volver al catálogo
-                </Link>
+                <ErrorMessage message={error} />
+                <div className="mt-4 text-center">
+                    <Link to="/catalogo" className="detail__back">
+                        Volver al catálogo
+                    </Link>
+                </div>
             </section>
         );
     }
@@ -75,11 +80,15 @@ function ProductDetail(): JSX.Element {
     if (!product) {
         return (
             <section className="detail">
-                <h1 className="detail__title">Libro no encontrado</h1>
-                <p>Es posible que el libro ya no esté disponible.</p>
-                <Link to="/catalogo" className="detail__back">
-                    Volver al catálogo
-                </Link>
+                <EmptyState
+                    title="Libro no encontrado"
+                    description="Es posible que el libro ya no esté disponible."
+                />
+                <div className="mt-4 text-center">
+                    <Link to="/catalogo" className="detail__back">
+                        Volver al catálogo
+                    </Link>
+                </div>
             </section>
         );
     }
