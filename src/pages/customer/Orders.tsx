@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
+import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../components/common/EmptyState";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Spinner from "../../components/common/Spinner";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { getUserOrders } from "../../services/orderService";
 import type { Order } from "../../types/order";
@@ -15,7 +19,7 @@ interface OrdersState {
     failed: boolean;
 }
 
-function Orders() {
+function Orders(): JSX.Element {
     const { user, loading: authLoading } = useAuthContext();
     const [state, setState] = useState<OrdersState | null>(null);
 
@@ -54,7 +58,7 @@ function Orders() {
         return (
             <section className="orders">
                 <h1 className="orders__title">Mis pedidos</h1>
-                <p className="orders__message">Cargando tus pedidos…</p>
+                <Spinner label="Cargando tus pedidos…" />
             </section>
         );
     }
@@ -63,9 +67,7 @@ function Orders() {
         return (
             <section className="orders">
                 <h1 className="orders__title">Mis pedidos</h1>
-                <p className="orders__message orders__message--error" role="alert">
-                    No pudimos cargar tus pedidos. Intentá de nuevo en unos minutos.
-                </p>
+                <ErrorMessage message="No pudimos cargar tus pedidos. Intentá de nuevo en unos minutos." />
             </section>
         );
     }
@@ -76,8 +78,11 @@ function Orders() {
         return (
             <section className="orders">
                 <h1 className="orders__title">Mis pedidos</h1>
-                <div className="orders__empty">
-                    <p>Todavía no hiciste ninguna compra.</p>
+                <EmptyState
+                    title="Todavía no hiciste ninguna compra"
+                    description="Cuando compres un libro, vas a ver tu pedido acá."
+                />
+                <div className="mt-4 text-center">
                     <Link to="/catalogo" className="orders__link">
                         Ver el catálogo
                     </Link>
