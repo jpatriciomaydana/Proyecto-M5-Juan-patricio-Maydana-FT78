@@ -1,0 +1,150 @@
+/* Mobile first: estos son los estilos base para celular. */
+.order-card {
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e6dfd2;
+    border-radius: 8px;
+    color: #292720;
+}
+
+.order-card__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e6dfd2;
+}
+
+.order-card__date {
+    margin: 0;
+    font-weight: 600;
+}
+
+.order-card__id {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    color: #706d63;
+    overflow-wrap: anywhere;
+}
+
+.order-card__status {
+    align-self: flex-start;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: #f7f3ec;
+    color: #8c6734;
+    border: 1px solid #b58a4a;
+}
+
+.order-card__status--processing {
+    color: #1f3528;
+    border-color: #2d4937;
+}
+
+.order-card__status--completed {
+    background: #1f3528;
+    color: #f7f3ec;
+    border-color: #1f3528;
+}
+
+.order-card__status--cancelled {
+    color: #8a2d2d;
+    border-color: #8a2d2d;
+}
+
+.order-card__count {
+    margin: 12px 0 0;
+    font-size: 0.875rem;
+    color: #706d63;
+}
+
+.order-card__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 8px 0 0;
+}
+
+.order-card__total strong {
+    font-size: 1.125rem;
+    color: #1f3528;
+}
+
+/* Detalle desplegable (<details> nativo) */
+.order-card__details {
+    margin-top: 12px;
+    border-top: 1px solid #e6dfd2;
+}
+
+.order-card__summary {
+    padding: 12px 0;
+    color: #8c6734;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.order-card__summary:focus-visible {
+    outline: 3px solid #b58a4a;
+    outline-offset: 2px;
+}
+
+.order-card__items {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-card__item {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e6dfd2;
+}
+
+.order-card__item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.order-card__item-title {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    overflow-wrap: anywhere;
+}
+
+.order-card__item-description {
+    margin: 4px 0 0;
+    font-size: 0.875rem;
+    color: #706d63;
+    overflow-wrap: anywhere;
+}
+
+.order-card__item-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin: 8px 0 0;
+    font-size: 0.875rem;
+    color: #706d63;
+}
+
+.order-card__item-line strong {
+    color: #1f3528;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    .order-card {
+        padding: 20px;
+    }
+
+    .order-card__header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+}

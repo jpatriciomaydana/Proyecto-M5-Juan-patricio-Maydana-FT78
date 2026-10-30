@@ -5,10 +5,10 @@ import { Link } from "react-router-dom";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
+import OrderCard from "../../components/orders/OrderCard";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { getUserOrders } from "../../services/orderService";
 import type { Order } from "../../types/order";
-import { STATUS_LABELS, formatDate, formatPrice } from "../../utils/orders";
 import "./Orders.css";
 
 // Guardamos junto a los pedidos el uid al que pertenecen. Así "cargando" se
@@ -97,38 +97,8 @@ function Orders(): JSX.Element {
 
             <ul className="orders__list">
                 {orders.map((order) => (
-                    <li key={order.id} className="orders__card">
-                        <div className="orders__header">
-                            <div>
-                                <p className="orders__date">
-                                    {formatDate(order.createdAt)}
-                                </p>
-                                <p className="orders__id">Pedido {order.id}</p>
-                            </div>
-                            <span
-                                className={`orders__status orders__status--${order.status}`}
-                            >
-                                {STATUS_LABELS[order.status] ?? order.status}
-                            </span>
-                        </div>
-
-                        <ul className="orders__items">
-                            {order.items.map((item) => (
-                                <li key={item.productId} className="orders__item">
-                                    <span className="orders__item-title">
-                                        {item.title}
-                                    </span>
-                                    <span className="orders__item-detail">
-                                        {item.quantity} × {formatPrice(item.price)}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-
-                        <p className="orders__total">
-                            <span>Total</span>
-                            <strong>{formatPrice(order.total)}</strong>
-                        </p>
+                    <li key={order.id}>
+                        <OrderCard order={order} />
                     </li>
                 ))}
             </ul>
