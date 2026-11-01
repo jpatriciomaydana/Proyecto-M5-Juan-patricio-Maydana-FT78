@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../components/common/EmptyState";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Spinner from "../../components/common/Spinner";
 import { deleteProduct, getProducts } from "../../services/productService";
 import type { Product } from "../../types/product";
 import "./AdminProducts.css";
@@ -103,34 +106,17 @@ function AdminProducts(): JSX.Element {
                 </Link>
             </div>
 
-            {loading && (
-                <p className="admin-products__message" role="status">
-                    Cargando productos...
-                </p>
-            )}
+            {loading && <Spinner label="Cargando productos..." />}
 
-            {error && (
-                <p
-                    className="admin-products__message admin-products__message--error"
-                    role="alert"
-                >
-                    {error}
-                </p>
-            )}
+            {error && <ErrorMessage message={error} />}
 
-            {deleteError && (
-                <p
-                    className="admin-products__message admin-products__message--error"
-                    role="alert"
-                >
-                    {deleteError}
-                </p>
-            )}
+            {deleteError && <ErrorMessage message={deleteError} />}
 
             {isEmpty && (
-                <p className="admin-products__message">
-                    Todavía no hay productos cargados.
-                </p>
+                <EmptyState
+                    title="Todavía no hay productos cargados"
+                    description='Usá el botón "Nuevo producto" para cargar el primero.'
+                />
             )}
 
             {hasProducts && (
