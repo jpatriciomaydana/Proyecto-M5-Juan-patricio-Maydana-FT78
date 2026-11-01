@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
 
+import EmptyState from "../../components/common/EmptyState";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Spinner from "../../components/common/Spinner";
 import { getAllOrders, updateOrderStatus } from "../../services/orderService";
 import type { Order, OrderStatus } from "../../types/order";
 import {
@@ -138,34 +141,17 @@ function AdminOrders(): JSX.Element {
         <section className="admin-orders">
             <h1 className="admin-orders__title">Pedidos</h1>
 
-            {loading && (
-                <p className="admin-orders__message" role="status">
-                    Cargando pedidos...
-                </p>
-            )}
+            {loading && <Spinner label="Cargando pedidos..." />}
 
-            {error && (
-                <p
-                    className="admin-orders__message admin-orders__message--error"
-                    role="alert"
-                >
-                    {error}
-                </p>
-            )}
+            {error && <ErrorMessage message={error} />}
 
-            {updateError && (
-                <p
-                    className="admin-orders__message admin-orders__message--error"
-                    role="alert"
-                >
-                    {updateError}
-                </p>
-            )}
+            {updateError && <ErrorMessage message={updateError} />}
 
             {noOrdersAtAll && (
-                <p className="admin-orders__message">
-                    Todavía no hay pedidos registrados.
-                </p>
+                <EmptyState
+                    title="Todavía no hay pedidos registrados"
+                    description="Cuando un cliente confirme una compra, la vas a ver acá."
+                />
             )}
 
             {hasOrders && (
@@ -203,9 +189,10 @@ function AdminOrders(): JSX.Element {
                     </p>
 
                     {visibleOrders.length === 0 ? (
-                        <p className="admin-orders__message">
-                            No hay pedidos con ese estado.
-                        </p>
+                        <EmptyState
+                            title="No hay pedidos con ese estado"
+                            description='Elegí otro estado o "Todos" para ver el resto.'
+                        />
                     ) : (
                         <table
                             className="admin-orders__table"
