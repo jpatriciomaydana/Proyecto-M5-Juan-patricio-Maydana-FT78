@@ -3,17 +3,13 @@ import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
 import type { Product } from "../../types/product";
+import { formatPrice } from "../../utils/orders";
 import AddToCartButton from "../cart/AddToCartButton";
 import "./ProductCard.css";
 
 interface ProductCardProps {
     product: Product;
 }
-
-const priceFormatter = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-});
 
 function ProductCard({ product }: ProductCardProps): JSX.Element {
     const [imageFailed, setImageFailed] = useState(false);
@@ -59,7 +55,7 @@ function ProductCard({ product }: ProductCardProps): JSX.Element {
 
                 <div className="product-card__footer">
                     <p className="product-card__price">
-                        {priceFormatter.format(product.price)}
+                        {formatPrice(product.price)}
                     </p>
                     <p className="product-card__stock">
                         {outOfStock ? "Sin stock" : `Stock: ${product.stock}`}

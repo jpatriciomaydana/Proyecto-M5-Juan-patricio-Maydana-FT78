@@ -8,12 +8,8 @@ import { useAuthContext } from "../../hooks/useAuthContext";
 import { useCart } from "../../hooks/useCart";
 import { createOrder } from "../../services/orderService";
 import type { CartItem } from "../../types/cart";
+import { formatPrice } from "../../utils/orders";
 import "./Cart.css";
-
-const priceFormatter = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-});
 
 interface CartRowProps {
     item: CartItem;
@@ -60,7 +56,7 @@ function CartRow({ item, locked }: CartRowProps): JSX.Element {
                 </h2>
                 <p className="cart-item__author">{product.author}</p>
                 <p className="cart-item__price">
-                    {priceFormatter.format(product.price)} c/u
+                    {formatPrice(product.price)} c/u
                 </p>
             </div>
 
@@ -98,7 +94,7 @@ function CartRow({ item, locked }: CartRowProps): JSX.Element {
                 </div>
 
                 <p className="cart-item__subtotal">
-                    {priceFormatter.format(product.price * quantity)}
+                    {formatPrice(product.price * quantity)}
                 </p>
 
                 <button
@@ -241,7 +237,7 @@ function Cart(): JSX.Element {
 
                     <p className="cart-summary__total">
                         <span>Total</span>
-                        <strong>{priceFormatter.format(total)}</strong>
+                        <strong>{formatPrice(total)}</strong>
                     </p>
 
                     <p className="cart-summary__note">

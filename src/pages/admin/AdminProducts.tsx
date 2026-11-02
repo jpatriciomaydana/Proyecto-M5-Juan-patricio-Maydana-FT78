@@ -7,12 +7,8 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
 import { deleteProduct, getProducts } from "../../services/productService";
 import type { Product } from "../../types/product";
+import { formatPrice } from "../../utils/orders";
 import "./AdminProducts.css";
-
-const priceFormatter = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-});
 
 function getDeleteErrorMessage(error: unknown): string {
     if (
@@ -158,7 +154,7 @@ function AdminProducts(): JSX.Element {
                                             {product.categoryId}
                                         </td>
                                         <td data-label="Precio">
-                                            {priceFormatter.format(product.price)}
+                                            {formatPrice(product.price)}
                                         </td>
                                         <td data-label="Stock">
                                             {product.stock > 0 ? (

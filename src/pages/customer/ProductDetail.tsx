@@ -4,16 +4,12 @@ import { Link, useParams } from "react-router-dom";
 
 import { getProductById } from "../../services/productService";
 import type { Product } from "../../types/product";
+import { formatPrice } from "../../utils/orders";
 import AddToCartButton from "../../components/cart/AddToCartButton";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
 import "./ProductDetail.css";
-
-const priceFormatter = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-});
 
 function ProductDetail(): JSX.Element {
     const { id } = useParams<{ id: string }>();
@@ -128,7 +124,7 @@ function ProductDetail(): JSX.Element {
                     )}
 
                     <p className="detail__price">
-                        {priceFormatter.format(product.price)}
+                        {formatPrice(product.price)}
                     </p>
                     <p className="detail__stock">
                         {outOfStock
