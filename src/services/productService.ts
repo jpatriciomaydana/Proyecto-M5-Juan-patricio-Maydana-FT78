@@ -6,6 +6,7 @@ import {
     getDoc,
     getDocs,
     limit,
+    onSnapshot,
     orderBy,
     query,
     serverTimestamp,
@@ -53,6 +54,29 @@ export async function getProducts(): Promise<Product[]> {
 
     return snapshot.docs.map((document) =>
         toProduct(document.id, document.data())
+    );
+}
+
+// Escucha el catálogo completo en tiempo real: avisa con la lista entera
+// al empezar y cada vez que un libro se crea, cambia o se borra.
+// Devuelve la función para dejar de escuchar (hay que llamarla al terminar).
+export function subscribeToProducts(
+    onChange: (products: Product[]) => void,
+    onError: (error: Error) => void
+): () => void {
+    const productsRef = collection(db, "products");
+    const productsQuery = query(productsRef, orderBy("title", "asc"));
+
+    return onSnapshot(
+        productsQuery,
+        (snapshot) => {
+            onChange(
+                snapshot.docs.map((document) =>
+                    toProduct(document.id, document.data())
+                )
+            );
+        },
+        (error) => onError(error)
     );
 }
 
