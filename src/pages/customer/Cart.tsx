@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
+import EmptyState from "../../components/common/EmptyState";
 import { CartIcon } from "../../components/common/Icons";
 import Spinner from "../../components/common/Spinner";
 import { useAuthContext } from "../../hooks/useAuthContext";
@@ -195,17 +196,15 @@ function Cart(): JSX.Element {
             <section className="cart-page">
                 <h1 className="cart-page__title">Carrito</h1>
 
-                <div className="cart-empty">
-                    <span className="cart-empty__icon">
-                        <CartIcon size={48} />
-                    </span>
-                    <p className="cart-empty__text">
-                        Tu carrito está vacío.
-                    </p>
-                    <Link to="/catalogo" className="cart-empty__link">
-                        Explorar el catálogo
-                    </Link>
-                </div>
+                <EmptyState
+                    icon={<CartIcon size={48} />}
+                    title="Tu carrito está vacío"
+                    action={
+                        <Link to="/catalogo" className="cart-empty__link">
+                            Explorar el catálogo
+                        </Link>
+                    }
+                />
             </section>
         );
     }
