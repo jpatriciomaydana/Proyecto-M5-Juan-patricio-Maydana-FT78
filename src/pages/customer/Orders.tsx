@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { JSX } from "react";
-import { Link } from "react-router-dom";
 
+import ButtonLink from "../../components/common/ButtonLink";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
@@ -81,12 +81,10 @@ function Orders(): JSX.Element {
                 <EmptyState
                     title="Todavía no hiciste ninguna compra"
                     description="Cuando compres un libro, vas a ver tu pedido acá."
+                    action={
+                        <ButtonLink to="/catalogo">Ver el catálogo</ButtonLink>
+                    }
                 />
-                <div className="mt-4 text-center">
-                    <Link to="/catalogo" className="orders__link">
-                        Ver el catálogo
-                    </Link>
-                </div>
             </section>
         );
     }

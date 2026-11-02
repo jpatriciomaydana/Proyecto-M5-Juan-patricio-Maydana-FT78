@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
+import ButtonLink from "../../components/common/ButtonLink";
 import EmptyState from "../../components/common/EmptyState";
 import { CartIcon } from "../../components/common/Icons";
 import Spinner from "../../components/common/Spinner";
@@ -200,9 +201,9 @@ function Cart(): JSX.Element {
                     icon={<CartIcon size={48} />}
                     title="Tu carrito está vacío"
                     action={
-                        <Link to="/catalogo" className="cart-empty__link">
+                        <ButtonLink to="/catalogo">
                             Explorar el catálogo
-                        </Link>
+                        </ButtonLink>
                     }
                 />
             </section>

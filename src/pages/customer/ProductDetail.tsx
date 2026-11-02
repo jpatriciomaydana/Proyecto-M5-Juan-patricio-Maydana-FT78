@@ -6,6 +6,7 @@ import { getProductById } from "../../services/productService";
 import type { Product } from "../../types/product";
 import { formatPrice } from "../../utils/orders";
 import AddToCartButton from "../../components/cart/AddToCartButton";
+import ButtonLink from "../../components/common/ButtonLink";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
@@ -65,9 +66,7 @@ function ProductDetail(): JSX.Element {
             <section className="detail">
                 <ErrorMessage message={error} />
                 <div className="mt-4 text-center">
-                    <Link to="/catalogo" className="detail__back">
-                        Volver al catálogo
-                    </Link>
+                    <ButtonLink to="/catalogo">Volver al catálogo</ButtonLink>
                 </div>
             </section>
         );
@@ -79,12 +78,12 @@ function ProductDetail(): JSX.Element {
                 <EmptyState
                     title="Libro no encontrado"
                     description="Es posible que el libro ya no esté disponible."
+                    action={
+                        <ButtonLink to="/catalogo">
+                            Volver al catálogo
+                        </ButtonLink>
+                    }
                 />
-                <div className="mt-4 text-center">
-                    <Link to="/catalogo" className="detail__back">
-                        Volver al catálogo
-                    </Link>
-                </div>
             </section>
         );
     }
