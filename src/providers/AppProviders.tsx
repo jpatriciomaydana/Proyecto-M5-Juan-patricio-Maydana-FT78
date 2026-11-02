@@ -1,6 +1,6 @@
 import type { JSX, ReactNode } from "react";
-import { AuthProvider } from "../contexts/AuthContext";
-import { CartProvider } from "../contexts/CartContext";
+import { AuthProvider } from "../contexts/AuthProvider";
+import { CartProvider } from "../contexts/CartProvider";
 
 interface AppProvidersProps {
     children: ReactNode;
