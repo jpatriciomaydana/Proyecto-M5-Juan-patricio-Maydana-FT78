@@ -2,22 +2,12 @@ import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent, JSX, ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { useProducts } from "../../hooks/useProducts";
 import { uploadProductImage } from "../../services/imageService";
-import {
-    createProduct,
-    getProductById,
-    updateProduct,
-} from "../../services/productService";
+import { getProductById } from "../../services/productService";
+import { CATEGORIES } from "../../types/product";
 import type { CategoryId, Product, ProductInput } from "../../types/product";
 import "./AdminProductForm.css";
-
-const CATEGORIES: CategoryId[] = [
-    "Terror",
-    "Novela",
-    "Fantasía",
-    "Ciencia Ficción",
-    "Clásicos",
-];
 
 // Límites de la imagen. Se controlan solo en el navegador (deuda 38).
 const ALLOWED_IMAGE_TYPES: string[] = [
@@ -60,7 +50,7 @@ const EMPTY_VALUES: FormValues = {
 };
 
 function isCategoryId(value: string): value is CategoryId {
-    return (CATEGORIES as string[]).includes(value);
+    return CATEGORIES.some((category) => category === value);
 }
 
 function isHttpUrl(value: string): boolean {
@@ -216,6 +206,9 @@ function AdminProductForm(): JSX.Element {
     const navigate = useNavigate();
     const isEditing = id !== undefined;
 
+    // Crear y editar pasan por el contexto: es el que habla con el servicio.
+    const { addProduct, editProduct } = useProducts();
+
     const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
     const [errors, setErrors] = useState<FormErrors>({});
     const [status, setStatus] = useState<LoadStatus>(
@@ -339,9 +332,9 @@ function AdminProductForm(): JSX.Element {
 
         try {
             if (id) {
-                await updateProduct(id, input);
+                await editProduct(id, input);
             } else {
-                await createProduct(input);
+                await addProduct(input);
             }
 
             navigate("/admin/productos");
