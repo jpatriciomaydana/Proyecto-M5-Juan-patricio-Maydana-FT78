@@ -1,5 +1,14 @@
 export type CategoryId = "Terror" | "Novela" | "Fantasía" | "Ciencia Ficción" | "Clásicos";
 
+// Lista de categorías para armar filtros y menús. Mismo orden en toda la app.
+export const CATEGORIES: readonly CategoryId[] = [
+    "Terror",
+    "Novela",
+    "Fantasía",
+    "Ciencia Ficción",
+    "Clásicos",
+];
+
 export interface Product {
     id: string;
     title: string;

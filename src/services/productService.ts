@@ -13,11 +13,16 @@ import {
     startAfter,
     Timestamp,
     updateDoc,
+    where,
 } from "firebase/firestore";
-import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
+import type {
+    DocumentData,
+    QueryConstraint,
+    QueryDocumentSnapshot,
+} from "firebase/firestore";
 
 import { db } from "./firebase";
-import type { Product, ProductInput } from "../types/product";
+import type { CategoryId, Product, ProductInput } from "../types/product";
 
 // Cantidad de libros que muestra cada página del catálogo.
 const PAGE_SIZE = 20;
@@ -81,22 +86,31 @@ export function subscribeToProducts(
 }
 
 // Trae una página del catálogo. Sin cursor, devuelve la primera.
+// Con categoryId, solo trae libros de esa categoría: esa combinación
+// (where + orderBy en campos distintos) necesita un índice compuesto
+// en Firestore: categoryId ascendente + title ascendente.
 // Pide un libro de más (PAGE_SIZE + 1) solo para saber si hay otra página.
 export async function getProductsPage(
-    cursor: ProductsCursor | null = null
+    cursor: ProductsCursor | null = null,
+    categoryId: CategoryId | null = null
 ): Promise<ProductsPage> {
     const productsRef = collection(db, "products");
 
-    const pageQuery = cursor
-        ? query(
-            productsRef,
-            orderBy("title", "asc"),
-            startAfter(cursor),
-            limit(PAGE_SIZE + 1)
-        )
-        : query(productsRef, orderBy("title", "asc"), limit(PAGE_SIZE + 1));
+    const constraints: QueryConstraint[] = [];
 
-    const snapshot = await getDocs(pageQuery);
+    if (categoryId) {
+        constraints.push(where("categoryId", "==", categoryId));
+    }
+
+    constraints.push(orderBy("title", "asc"));
+
+    if (cursor) {
+        constraints.push(startAfter(cursor));
+    }
+
+    constraints.push(limit(PAGE_SIZE + 1));
+
+    const snapshot = await getDocs(query(productsRef, ...constraints));
 
     const hasMore = snapshot.docs.length > PAGE_SIZE;
     const pageDocs = snapshot.docs.slice(0, PAGE_SIZE);
