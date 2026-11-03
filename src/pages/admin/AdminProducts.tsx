@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
-import type { JSX } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent, JSX } from "react";
 import { Link } from "react-router-dom";
 
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
-import { deleteProduct, getProducts } from "../../services/productService";
+import { useDebounce } from "../../hooks/useDebounce";
+import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
 import { formatPrice } from "../../utils/orders";
+import { normalizeText } from "../../utils/text";
 import "./AdminProducts.css";
 
 function getDeleteErrorMessage(error: unknown): string {
@@ -24,43 +26,42 @@ function getDeleteErrorMessage(error: unknown): string {
 }
 
 function AdminProducts(): JSX.Element {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    // La lista, la carga y el borrado vienen del contexto. Esta pantalla no
+    // habla con Firebase: el Provider es quien llama al servicio.
+    const { products, loading, error, loadProducts, removeProduct } =
+        useProducts();
+
+    // Texto del buscador. Solo lo usa esta pantalla, por eso es estado local.
+    const [searchText, setSearchText] = useState<string>("");
+    const debouncedSearch = useDebounce(searchText, 300);
 
     // Fila que está pidiendo confirmación y fila que se está borrando.
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
+    // Empieza a escuchar el catálogo completo (una sola vez, es perezoso).
     useEffect(() => {
-        let cancelled = false;
+        loadProducts();
+    }, [loadProducts]);
 
-        getProducts()
-            .then((data) => {
-                if (!cancelled) {
-                    setProducts(data);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setError(
-                        "No pudimos cargar los productos. Intentá de nuevo en unos minutos."
-                    );
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            });
+    const term = normalizeText(debouncedSearch);
 
-        // Si el usuario sale de la página antes de que responda Firestore,
-        // evitamos actualizar el estado de un componente que ya no existe.
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    const results = useMemo(() => {
+        if (!term) {
+            return products;
+        }
+
+        return products.filter(
+            (product) =>
+                normalizeText(product.title).includes(term) ||
+                normalizeText(product.author).includes(term)
+        );
+    }, [products, term]);
+
+    function handleSearchChange(event: ChangeEvent<HTMLInputElement>): void {
+        setSearchText(event.target.value);
+    }
 
     function askConfirmation(productId: string): void {
         setDeleteError(null);
@@ -72,12 +73,9 @@ function AdminProducts(): JSX.Element {
         setDeletingId(product.id);
 
         try {
-            await deleteProduct(product.id);
-
-            // Firestore ya confirmó: recién ahora sacamos la fila de la pantalla.
-            setProducts((previous) =>
-                previous.filter((item) => item.id !== product.id)
-            );
+            // El Provider borra en Firestore. La fila desaparece sola cuando
+            // Firestore avisa el cambio (onSnapshot): no se saca a mano.
+            await removeProduct(product.id);
         } catch (caught) {
             setDeleteError(getDeleteErrorMessage(caught));
         } finally {
@@ -88,6 +86,7 @@ function AdminProducts(): JSX.Element {
 
     const hasProducts = !loading && !error && products.length > 0;
     const isEmpty = !loading && !error && products.length === 0;
+    const noMatches = hasProducts && results.length === 0;
 
     return (
         <section className="admin-products">
@@ -102,6 +101,26 @@ function AdminProducts(): JSX.Element {
                 </Link>
             </div>
 
+            {hasProducts && (
+                <div className="admin-products__search">
+                    <label
+                        htmlFor="admin-product-search"
+                        className="admin-products__search-label"
+                    >
+                        Buscar productos por título o autor
+                    </label>
+                    <input
+                        id="admin-product-search"
+                        type="search"
+                        value={searchText}
+                        onChange={handleSearchChange}
+                        placeholder="Buscar por título o autor"
+                        autoComplete="off"
+                        className="admin-products__search-input"
+                    />
+                </div>
+            )}
+
             {loading && <Spinner label="Cargando productos..." />}
 
             {error && <ErrorMessage message={error} />}
@@ -115,11 +134,22 @@ function AdminProducts(): JSX.Element {
                 />
             )}
 
-            {hasProducts && (
+            {noMatches && (
+                <EmptyState
+                    title="No encontramos productos"
+                    description="Probá con otro título o autor."
+                />
+            )}
+
+            {hasProducts && !noMatches && (
                 <>
-                    <p className="admin-products__count">
-                        {products.length}{" "}
-                        {products.length === 1 ? "producto" : "productos"}
+                    <p className="admin-products__count" aria-live="polite">
+                        {term
+                            ? `${results.length} de ${products.length} productos`
+                            : `${products.length} ${products.length === 1
+                                ? "producto"
+                                : "productos"
+                            }`}
                     </p>
 
                     <table
@@ -136,7 +166,7 @@ function AdminProducts(): JSX.Element {
                             </tr>
                         </thead>
                         <tbody>
-                            {products.map((product) => {
+                            {results.map((product) => {
                                 const isConfirming = confirmingId === product.id;
                                 const isDeleting = deletingId === product.id;
 

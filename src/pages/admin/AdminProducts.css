@@ -279,10 +279,50 @@
 }
 
 @media (min-width: 768px) {
+
     .admin-products__delete,
     .admin-products__confirm-yes,
     .admin-products__confirm-no {
         min-height: 36px;
         padding: 0 0.9rem;
+    }
+}
+
+/* ---- Buscador ---- */
+
+/* La etiqueta se oculta a la vista, pero queda para lectores de pantalla. */
+.admin-products__search-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.admin-products__search-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 0.75rem;
+    border: 1px solid #e6dfd2;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #292720;
+    font-size: 1rem;
+}
+
+.admin-products__search-input::placeholder {
+    color: #706d63;
+}
+
+.admin-products__search-input:focus-visible {
+    outline: 3px solid #b58a4a;
+    outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+    .admin-products__search-input {
+        max-width: 420px;
     }
 }
