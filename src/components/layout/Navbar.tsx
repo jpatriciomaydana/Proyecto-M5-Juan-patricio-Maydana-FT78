@@ -4,6 +4,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { useAuthContext } from "../../hooks/useAuthContext";
 import CartLink from "../cart/CartLink";
+import SearchBar from "./SearchBar";
 import "./Navbar.css";
 
 function Navbar(): JSX.Element {
@@ -100,6 +101,8 @@ function Navbar(): JSX.Element {
                                 Admin
                             </NavLink>
                         )}
+
+                        <SearchBar onSearch={closeMenu} />
                     </div>
 
                     {!loading && (

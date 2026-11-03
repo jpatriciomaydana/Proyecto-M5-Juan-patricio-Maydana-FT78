@@ -7,6 +7,8 @@ import type { CategoryId } from "../../types/product";
 interface CategorySidebarProps {
     // null significa "Todas".
     activeCategory: CategoryId | null;
+    // Texto del buscador: se conserva al cambiar de categoría.
+    searchTerm: string;
 }
 
 // Clases compartidas por todos los enlaces. En celular son botones en fila;
@@ -20,14 +22,37 @@ const ACTIVE_CLASSES = "border-gold-dark font-bold text-gold-dark";
 const INACTIVE_CLASSES =
     "border-line text-ink hover:border-forest lg:border-transparent";
 
-function CategorySidebar({ activeCategory }: CategorySidebarProps): JSX.Element {
+// Arma /catalogo?categoria=...&q=... solo con los parámetros que hay.
+function buildCatalogPath(
+    category: CategoryId | null,
+    searchTerm: string,
+): string {
+    const params = new URLSearchParams();
+
+    if (category) {
+        params.set("categoria", category);
+    }
+
+    if (searchTerm) {
+        params.set("q", searchTerm);
+    }
+
+    const queryString = params.toString();
+
+    return queryString ? `/catalogo?${queryString}` : "/catalogo";
+}
+
+function CategorySidebar({
+    activeCategory,
+    searchTerm,
+}: CategorySidebarProps): JSX.Element {
     return (
         <nav
             aria-label="Categorías"
             className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:mb-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0"
         >
             <Link
-                to="/catalogo"
+                to={buildCatalogPath(null, searchTerm)}
                 aria-current={activeCategory === null ? "page" : undefined}
                 className={`${BASE_CLASSES} ${activeCategory === null ? ACTIVE_CLASSES : INACTIVE_CLASSES
                     }`}
@@ -38,7 +63,7 @@ function CategorySidebar({ activeCategory }: CategorySidebarProps): JSX.Element 
             {CATEGORIES.map((category) => (
                 <Link
                     key={category}
-                    to={`/catalogo?categoria=${encodeURIComponent(category)}`}
+                    to={buildCatalogPath(category, searchTerm)}
                     aria-current={activeCategory === category ? "page" : undefined}
                     className={`${BASE_CLASSES} ${activeCategory === category
                             ? ACTIVE_CLASSES
