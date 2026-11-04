@@ -6,24 +6,7 @@ import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Input from "../../components/common/Input";
 import { useAuthContext } from "../../hooks/useAuthContext";
-
-// Adónde volver tras iniciar sesión. Solo se aceptan rutas internas
-// ("/carrito"), nunca direcciones externas.
-function getReturnTo(state: unknown): string {
-    if (typeof state === "object" && state !== null && "returnTo" in state) {
-        const { returnTo } = state as { returnTo: unknown };
-
-        if (
-            typeof returnTo === "string" &&
-            returnTo.startsWith("/") &&
-            !returnTo.startsWith("//")
-        ) {
-            return returnTo;
-        }
-    }
-
-    return "/catalogo";
-}
+import { getReturnTo } from "../../utils/navigation";
 
 interface LoginErrors {
     email?: string;
@@ -124,10 +107,12 @@ function Login(): JSX.Element {
 
     return (
         <section className="mx-auto w-full max-w-md px-4 py-10">
-            <h1 className="m-0 font-serif text-3xl text-forest">
+            <h1 className="m-0 text-center font-serif text-3xl text-forest">
                 Iniciar sesión
             </h1>
-            <p className="mt-2 mb-6 text-muted">Accedé a tu cuenta.</p>
+            <p className="mt-2 mb-6 text-center text-muted">
+                Accedé a tu cuenta.
+            </p>
 
             <form
                 onSubmit={handleSubmit}
