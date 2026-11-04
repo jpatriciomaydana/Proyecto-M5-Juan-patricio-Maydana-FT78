@@ -1,7 +1,11 @@
 import { useState } from "react";
-import type { SubmitEvent } from "react";
+import type { ChangeEvent, FormEvent, JSX } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
+import Button from "../../components/common/Button";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import Input from "../../components/common/Input";
 import { useAuthContext } from "../../hooks/useAuthContext";
-import { useLocation, useNavigate } from "react-router-dom";
 
 // Adónde volver tras iniciar sesión. Solo se aceptan rutas internas
 // ("/carrito"), nunca direcciones externas.
@@ -21,69 +25,152 @@ function getReturnTo(state: unknown): string {
     return "/catalogo";
 }
 
-function Login() {
+interface LoginErrors {
+    email?: string;
+    password?: string;
+}
+
+// Chequeo simple de formato: algo@algo.algo, sin espacios.
+function isValidEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validate(email: string, password: string): LoginErrors {
+    const errors: LoginErrors = {};
+
+    if (!email.trim()) {
+        errors.email = "Ingresá tu correo electrónico.";
+    } else if (!isValidEmail(email.trim())) {
+        errors.email = "Ingresá un correo válido, por ejemplo nombre@correo.com.";
+    }
+
+    if (!password) {
+        errors.password = "Ingresá tu contraseña.";
+    }
+
+    return errors;
+}
+
+// Traduce el código de error de Firebase a un mensaje para la persona.
+function getLoginErrorMessage(error: unknown): string {
+    const code =
+        typeof error === "object" && error !== null && "code" in error
+            ? String(error.code)
+            : "";
+
+    if (
+        code === "auth/invalid-credential" ||
+        code === "auth/user-not-found" ||
+        code === "auth/wrong-password"
+    ) {
+        return "Correo o contraseña incorrectos.";
+    }
+
+    if (code === "auth/too-many-requests") {
+        return "Demasiados intentos. Probá de nuevo en unos minutos.";
+    }
+
+    if (code === "auth/network-request-failed") {
+        return "No pudimos conectarnos. Revisá tu conexión e intentá de nuevo.";
+    }
+
+    return "No pudimos iniciar sesión. Intentá de nuevo.";
+}
+
+function Login(): JSX.Element {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errors, setErrors] = useState<LoginErrors>({});
+    const [submitError, setSubmitError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
 
     const { login } = useAuthContext();
     const navigate = useNavigate();
     const location = useLocation();
 
-    async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    function handleEmailChange(event: ChangeEvent<HTMLInputElement>): void {
+        setEmail(event.target.value);
+        setErrors((previous) => ({ ...previous, email: undefined }));
+    }
+
+    function handlePasswordChange(event: ChangeEvent<HTMLInputElement>): void {
+        setPassword(event.target.value);
+        setErrors((previous) => ({ ...previous, password: undefined }));
+    }
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
         event.preventDefault();
 
-        setError("");
+        setSubmitError("");
+
+        const foundErrors = validate(email, password);
+        setErrors(foundErrors);
+
+        if (Object.keys(foundErrors).length > 0) {
+            return;
+        }
+
         setLoading(true);
 
         try {
-            await login(email, password);
+            await login(email.trim(), password);
             navigate(getReturnTo(location.state));
-        } catch {
-            //console.error(error);
-            setError("No se pudo iniciar sesión.");
+        } catch (error) {
+            setSubmitError(getLoginErrorMessage(error));
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <section>
-            <h1>Iniciar sesión</h1>
-            <p>Accedé a tu cuenta.</p>
+        <section className="mx-auto w-full max-w-md px-4 py-10">
+            <h1 className="m-0 font-serif text-3xl text-forest">
+                Iniciar sesión
+            </h1>
+            <p className="mt-2 mb-6 text-muted">Accedé a tu cuenta.</p>
 
-            {error && <p>{error}</p>}
+            <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="flex flex-col gap-4 rounded-md border border-line bg-white p-5"
+            >
+                {submitError && <ErrorMessage message={submitError} />}
 
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="email">Correo electrónico</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        autoComplete="email"
-                        required
-                    />
-                </div>
+                <Input
+                    id="email"
+                    label="Correo electrónico"
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    autoComplete="email"
+                    error={errors.email}
+                />
 
-                <div>
-                    <label htmlFor="password">Contraseña</label>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        autoComplete="current-password"
-                        required
-                    />
-                </div>
+                <Input
+                    id="password"
+                    label="Contraseña"
+                    type="password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    autoComplete="current-password"
+                    error={errors.password}
+                />
 
-                <button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading}>
                     {loading ? "Iniciando sesión..." : "Iniciar sesión"}
-                </button>
+                </Button>
             </form>
+
+            <p className="mt-4 text-center text-muted">
+                ¿No tenés cuenta?{" "}
+                <Link
+                    to="/registro"
+                    state={location.state}
+                    className="font-semibold text-gold-dark underline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                >
+                    Crear cuenta
+                </Link>
+            </p>
         </section>
     );
 }
