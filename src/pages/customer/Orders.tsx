@@ -77,7 +77,7 @@ function Orders(): JSX.Element {
     if (orders.length === 0) {
         return (
             <section className="orders">
-                <h1 className="orders__title">Mis pedidos</h1>
+                <h1 className="orders__title orders__title--centered">Mis pedidos</h1>
                 <EmptyState
                     title="Todavía no hiciste ninguna compra"
                     description="Cuando compres un libro, vas a ver tu pedido acá."

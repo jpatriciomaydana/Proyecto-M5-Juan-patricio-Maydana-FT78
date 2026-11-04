@@ -13,6 +13,10 @@
     color: #1f3528;
 }
 
+.orders__title--centered {
+    text-align: center;
+}
+
 .orders__link {
     display: inline-flex;
     align-items: center;
