@@ -4,6 +4,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { useAuthContext } from "../../hooks/useAuthContext";
 import CartLink from "../cart/CartLink";
+import Avatar from "../common/Avatar";
 import SearchBar from "./SearchBar";
 import "./Navbar.css";
 
@@ -12,7 +13,10 @@ function Navbar(): JSX.Element {
     const { user, profile, role, loading, logout } = useAuthContext();
     const navigate = useNavigate();
 
-    const greetingName = profile?.displayName || user?.email;
+    // Con Google el nombre viene en user (Firebase Auth); si no, el del
+    // perfil de Firestore; si tampoco hay, el correo.
+    const greetingName =
+        user?.displayName || profile?.displayName || user?.email || "";
 
     function closeMenu(): void {
         setMenuOpen(false);
@@ -109,6 +113,11 @@ function Navbar(): JSX.Element {
                         <div className="navbar__account">
                             {user ? (
                                 <>
+                                    <Avatar
+                                        photoURL={user.photoURL}
+                                        name={greetingName}
+                                    />
+
                                     <span className="navbar__greeting">
                                         Hola, {greetingName}
                                     </span>

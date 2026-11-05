@@ -23,7 +23,12 @@ export function subscribeToAuthChanges(
     return onAuthStateChanged(auth, (firebaseUser) => {
         void callback(
             firebaseUser
-                ? { uid: firebaseUser.uid, email: firebaseUser.email }
+                ? {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName,
+                    photoURL: firebaseUser.photoURL,
+                }
                 : null,
         );
     });
