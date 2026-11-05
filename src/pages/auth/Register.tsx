@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import GoogleButton from "../../components/common/GoogleButton";
 import Input from "../../components/common/Input";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { getReturnTo } from "../../utils/navigation";
@@ -72,6 +73,32 @@ function getRegisterErrorMessage(error: unknown): string {
     return "No pudimos crear la cuenta. Intentá de nuevo.";
 }
 
+// Igual que el anterior, para el ingreso con Google. Si la persona cierra
+// la ventana de Google no es una falla: devuelve "" y no se muestra error.
+function getGoogleErrorMessage(error: unknown): string {
+    const code =
+        typeof error === "object" && error !== null && "code" in error
+            ? String(error.code)
+            : "";
+
+    if (
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/cancelled-popup-request"
+    ) {
+        return "";
+    }
+
+    if (code === "auth/popup-blocked") {
+        return "El navegador bloqueó la ventana de Google. Permitila e intentá de nuevo.";
+    }
+
+    if (code === "auth/network-request-failed") {
+        return "No pudimos conectarnos. Revisá tu conexión e intentá de nuevo.";
+    }
+
+    return "No pudimos ingresar con Google. Intentá de nuevo.";
+}
+
 function Register(): JSX.Element {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -80,7 +107,7 @@ function Register(): JSX.Element {
     const [submitError, setSubmitError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const { register } = useAuthContext();
+    const { register, loginWithGoogle } = useAuthContext();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -119,6 +146,20 @@ function Register(): JSX.Element {
         } catch (error) {
             console.error("Error al crear la cuenta:", error);
             setSubmitError(getRegisterErrorMessage(error));
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleGoogleClick(): Promise<void> {
+        setSubmitError("");
+        setLoading(true);
+
+        try {
+            await loginWithGoogle();
+            navigate(getReturnTo(location.state));
+        } catch (error) {
+            setSubmitError(getGoogleErrorMessage(error));
         } finally {
             setLoading(false);
         }
@@ -174,6 +215,19 @@ function Register(): JSX.Element {
                     {loading ? "Creando cuenta..." : "Crear cuenta"}
                 </Button>
             </form>
+
+            <div className="mt-4 flex flex-col gap-4">
+                <div
+                    className="flex items-center gap-3 text-muted"
+                    aria-hidden="true"
+                >
+                    <span className="h-px flex-1 bg-line" />
+                    <span className="text-sm">o</span>
+                    <span className="h-px flex-1 bg-line" />
+                </div>
+
+                <GoogleButton onClick={handleGoogleClick} disabled={loading} />
+            </div>
 
             <p className="mt-4 text-center text-muted">
                 ¿Ya tenés cuenta?{" "}
