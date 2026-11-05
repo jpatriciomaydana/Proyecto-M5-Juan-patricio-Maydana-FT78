@@ -4,6 +4,7 @@ import type { JSX, ReactNode } from "react";
 import {
     getUserProfile,
     loginUser,
+    loginWithGoogle as signInWithGoogle,
     logoutUser,
     registerUser,
     subscribeToAuthChanges,
@@ -49,6 +50,14 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         await loginUser(email, password);
     }
 
+    async function loginWithGoogle(): Promise<void> {
+        const uid = await signInWithGoogle();
+
+        // Si era su primera vez, el perfil se creó recién: lo volvemos a
+        // leer porque el listener de sesión pudo ejecutarse antes.
+        setProfile(await getUserProfile(uid));
+    }
+
     async function register(
         email: string,
         password: string,
@@ -72,6 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
                 role: profile?.role ?? null,
                 loading,
                 login,
+                loginWithGoogle,
                 register,
                 logout,
             }}

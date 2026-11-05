@@ -1,7 +1,9 @@
 import {
     createUserWithEmailAndPassword,
+    GoogleAuthProvider,
     onAuthStateChanged,
     signInWithEmailAndPassword,
+    signInWithPopup,
     signOut,
 } from "firebase/auth";
 import {
@@ -59,6 +61,27 @@ export async function loginUser(
     password: string,
 ): Promise<void> {
     await signInWithEmailAndPassword(auth, email, password);
+}
+
+// Abre la ventana de Google. Si es la primera vez que la persona entra,
+// crea su users/{uid} con rol customer. Si el documento ya existe
+// (por ejemplo, un admin) no se toca, para no pisar el rol.
+// Devuelve el uid.
+export async function loginWithGoogle(): Promise<string> {
+    const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+    const uid = credential.user.uid;
+
+    const existingProfile = await getUserProfile(uid);
+
+    if (!existingProfile) {
+        await setDoc(doc(db, "users", uid), {
+            email: credential.user.email,
+            role: "customer",
+            createdAt: serverTimestamp(),
+        });
+    }
+
+    return uid;
 }
 
 export async function logoutUser(): Promise<void> {
