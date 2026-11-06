@@ -1,6 +1,7 @@
 import {
     collection,
     doc,
+    getDoc,
     getDocs,
     query,
     Timestamp,
@@ -64,6 +65,19 @@ export async function getAllOrders(): Promise<Order[]> {
     return sortNewestFirst(
         snapshot.docs.map((document) => toOrder(document.id, document.data())),
     );
+}
+
+// Trae un pedido por su id. Devuelve null si no existe. Si el pedido es de
+// otra persona y quien pregunta no es admin, Firestore rechaza la lectura
+// (permission-denied): el error llega tal cual a quien llamó.
+export async function getOrderById(orderId: string): Promise<Order | null> {
+    const snapshot = await getDoc(doc(db, "orders", orderId));
+
+    if (!snapshot.exists()) {
+        return null;
+    }
+
+    return toOrder(snapshot.id, snapshot.data());
 }
 
 // Cambia SOLO el campo status de un pedido. La regla de orders permite esta
