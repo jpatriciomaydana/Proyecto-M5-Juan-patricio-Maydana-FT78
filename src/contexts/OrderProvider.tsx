@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import type { JSX, ReactNode } from "react";
 
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -11,26 +11,10 @@ import {
 import type { Order, OrderStatus } from "../types/order";
 import { OrderContext } from "./orderContextObject";
 import type { OrderContextType } from "./orderContextObject";
+import { initialOrderState, orderReducer } from "./orderReducer";
 
 interface OrderProviderProps {
     children: ReactNode;
-}
-
-// Cada lista se guarda junto al uid de quien la pidió. Solo se muestra si
-// coincide con el usuario actual: si cambia la sesión, los pedidos del
-// usuario anterior dejan de verse sin tener que borrarlos.
-interface OrderListState {
-    uid: string;
-    orders: Order[];
-    error: string | null;
-}
-
-interface SelectedOrderState {
-    uid: string;
-    orderId: string;
-    loading: boolean;
-    order: Order | null;
-    error: string | null;
 }
 
 const EMPTY_ORDERS: Order[] = [];
@@ -54,32 +38,21 @@ function getUpdateErrorMessage(error: unknown): string {
 }
 
 // Guarda los pedidos y es la única capa que habla con orderService.
-// Las pantallas piden cosas por useOrders(). Los mensajes de error se
-// arman acá: el servicio deja pasar el error de Firebase tal cual.
+// Las pantallas piden cosas por useOrders(). Cómo cambia el estado lo
+// decide orderReducer (función pura); acá se llama al servicio, se arman
+// los mensajes de error y se hace dispatch.
 function OrderProvider({ children }: OrderProviderProps): JSX.Element {
     const { user } = useAuthContext();
     const uid = user?.uid ?? null;
 
-    const [userState, setUserState] = useState<OrderListState | null>(null);
-    const [adminState, setAdminState] = useState<OrderListState | null>(null);
-    const [selectedState, setSelectedState] =
-        useState<SelectedOrderState | null>(null);
-    const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(
-        null,
-    );
-    const [statusUpdateError, setStatusUpdateError] = useState<string | null>(
-        null,
-    );
+    const [state, dispatch] = useReducer(orderReducer, initialOrderState);
 
-    // Id del último pedido pedido: sirve para ignorar una respuesta tardía
-    // si la persona ya pidió otro pedido.
-    const latestSelectedIdRef = useRef<string | null>(null);
-
-    const userList = uid !== null && userState?.uid === uid ? userState : null;
+    // Solo se muestra lo que pertenece al usuario actual.
+    const userList = uid !== null && state.user?.uid === uid ? state.user : null;
     const adminList =
-        uid !== null && adminState?.uid === uid ? adminState : null;
+        uid !== null && state.admin?.uid === uid ? state.admin : null;
     const selected =
-        uid !== null && selectedState?.uid === uid ? selectedState : null;
+        uid !== null && state.selected?.uid === uid ? state.selected : null;
 
     const loadUserOrders = useCallback((): void => {
         if (!uid) {
@@ -88,11 +61,11 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
 
         getUserOrders(uid)
             .then((orders) => {
-                setUserState({ uid, orders, error: null });
+                dispatch({ type: "USER_LOADED", uid, orders });
             })
             .catch((error: unknown) => {
                 console.error("No se pudieron cargar los pedidos:", error);
-                setUserState({ uid, orders: [], error: LOAD_ERROR_MESSAGE });
+                dispatch({ type: "USER_FAILED", uid, error: LOAD_ERROR_MESSAGE });
             });
     }, [uid]);
 
@@ -103,11 +76,15 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
 
         getAllOrders()
             .then((orders) => {
-                setAdminState({ uid, orders, error: null });
+                dispatch({ type: "ADMIN_LOADED", uid, orders });
             })
             .catch((error: unknown) => {
                 console.error("No se pudieron cargar los pedidos:", error);
-                setAdminState({ uid, orders: [], error: LOAD_ERROR_MESSAGE });
+                dispatch({
+                    type: "ADMIN_FAILED",
+                    uid,
+                    error: LOAD_ERROR_MESSAGE,
+                });
             });
     }, [uid]);
 
@@ -117,43 +94,35 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
                 return;
             }
 
-            latestSelectedIdRef.current = orderId;
-            setSelectedState({
-                uid,
-                orderId,
-                loading: true,
-                order: null,
-                error: null,
-            });
+            dispatch({ type: "SELECTED_REQUESTED", uid, orderId });
 
             getOrderById(orderId)
                 .then((order) => {
-                    if (latestSelectedIdRef.current !== orderId) {
-                        return;
+                    if (order) {
+                        dispatch({
+                            type: "SELECTED_LOADED",
+                            uid,
+                            orderId,
+                            order,
+                        });
+                    } else {
+                        dispatch({
+                            type: "SELECTED_FAILED",
+                            uid,
+                            orderId,
+                            error: NOT_FOUND_MESSAGE,
+                        });
                     }
-
-                    setSelectedState({
-                        uid,
-                        orderId,
-                        loading: false,
-                        order,
-                        error: order ? null : NOT_FOUND_MESSAGE,
-                    });
                 })
                 .catch((error: unknown) => {
                     console.error("No se pudo cargar el pedido:", error);
 
-                    if (latestSelectedIdRef.current !== orderId) {
-                        return;
-                    }
-
                     // Un pedido ajeno llega como permission-denied: para la
                     // persona es lo mismo que "no existe".
-                    setSelectedState({
+                    dispatch({
+                        type: "SELECTED_FAILED",
                         uid,
                         orderId,
-                        loading: false,
-                        order: null,
                         error:
                             getErrorCode(error) === "permission-denied"
                                 ? NOT_FOUND_MESSAGE
@@ -166,43 +135,20 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
 
     const changeStatus = useCallback(
         async (orderId: string, status: OrderStatus): Promise<void> => {
-            setStatusUpdateError(null);
-            setStatusUpdatingId(orderId);
+            dispatch({ type: "STATUS_UPDATE_STARTED", orderId });
 
             try {
                 await updateOrderStatus(orderId, status);
 
-                // Firestore ya confirmó: recién ahora cambiamos el estado
-                // en pantalla, en todos los lugares donde esté ese pedido.
-                const applyStatus = (order: Order): Order =>
-                    order.id === orderId ? { ...order, status } : order;
-
-                setAdminState((previous) =>
-                    previous
-                        ? {
-                            ...previous,
-                            orders: previous.orders.map(applyStatus),
-                        }
-                        : previous,
-                );
-                setUserState((previous) =>
-                    previous
-                        ? {
-                            ...previous,
-                            orders: previous.orders.map(applyStatus),
-                        }
-                        : previous,
-                );
-                setSelectedState((previous) =>
-                    previous && previous.order
-                        ? { ...previous, order: applyStatus(previous.order) }
-                        : previous,
-                );
+                // Firestore ya confirmó: recién ahora cambia el estado en
+                // pantalla, en todos los lugares donde esté ese pedido.
+                dispatch({ type: "STATUS_UPDATE_SUCCEEDED", orderId, status });
             } catch (error) {
                 console.error("No se pudo cambiar el estado:", error);
-                setStatusUpdateError(getUpdateErrorMessage(error));
-            } finally {
-                setStatusUpdatingId(null);
+                dispatch({
+                    type: "STATUS_UPDATE_FAILED",
+                    error: getUpdateErrorMessage(error),
+                });
             }
         },
         [],
@@ -221,6 +167,8 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
     const selectedOrderError = selected?.error ?? null;
     const selectedOrderLoading =
         uid !== null && (selected === null || selected.loading);
+
+    const { statusUpdatingId, statusUpdateError } = state;
 
     const value = useMemo<OrderContextType>(
         () => ({
