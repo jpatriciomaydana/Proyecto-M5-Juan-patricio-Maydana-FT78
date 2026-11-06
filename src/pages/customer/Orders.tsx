@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { JSX } from "react";
 
 import ButtonLink from "../../components/common/ButtonLink";
@@ -7,77 +7,46 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
 import OrderCard from "../../components/orders/OrderCard";
 import { useAuthContext } from "../../hooks/useAuthContext";
-import { getUserOrders } from "../../services/orderService";
-import type { Order } from "../../types/order";
+import { useOrders } from "../../hooks/useOrders";
 import "./Orders.css";
 
-// Guardamos junto a los pedidos el uid al que pertenecen. Así "cargando" se
-// calcula comparando uids y no hace falta llamar a setState dentro del efecto.
-interface OrdersState {
-    uid: string;
-    orders: Order[];
-    failed: boolean;
-}
-
+// La pantalla solo muestra: los pedidos los guarda OrderProvider y los
+// pide a orderService. Acá queda únicamente qué dibujar en cada estado.
 function Orders(): JSX.Element {
-    const { user, loading: authLoading } = useAuthContext();
-    const [state, setState] = useState<OrdersState | null>(null);
-
-    const uid = user?.uid ?? null;
+    const { loading: authLoading } = useAuthContext();
+    const {
+        userOrders,
+        userOrdersLoading,
+        userOrdersError,
+        loadUserOrders,
+    } = useOrders();
 
     useEffect(() => {
-        if (!uid) {
-            return undefined;
-        }
+        loadUserOrders();
+    }, [loadUserOrders]);
 
-        let cancelled = false;
+    const loading = authLoading || userOrdersLoading;
+    const isEmpty = !loading && !userOrdersError && userOrders.length === 0;
 
-        getUserOrders(uid)
-            .then((orders) => {
-                if (!cancelled) {
-                    setState({ uid, orders, failed: false });
+    return (
+        <section className="orders">
+            <h1
+                className={
+                    isEmpty
+                        ? "orders__title orders__title--centered"
+                        : "orders__title"
                 }
-            })
-            .catch((error: unknown) => {
-                console.error("No se pudieron cargar los pedidos:", error);
-                if (!cancelled) {
-                    setState({ uid, orders: [], failed: true });
-                }
-            });
+            >
+                Mis pedidos
+            </h1>
 
-        // Si el componente se desmonta antes de que responda Firestore,
-        // se ignora el resultado.
-        return () => {
-            cancelled = true;
-        };
-    }, [uid]);
+            {loading && <Spinner label="Cargando tus pedidos…" />}
 
-    const loading = authLoading || (uid !== null && state?.uid !== uid);
+            {!loading && userOrdersError && (
+                <ErrorMessage message={userOrdersError} />
+            )}
 
-    if (loading) {
-        return (
-            <section className="orders">
-                <h1 className="orders__title">Mis pedidos</h1>
-                <Spinner label="Cargando tus pedidos…" />
-            </section>
-        );
-    }
-
-    if (state?.failed) {
-        return (
-            <section className="orders">
-                <h1 className="orders__title">Mis pedidos</h1>
-                <ErrorMessage message="No pudimos cargar tus pedidos. Intentá de nuevo en unos minutos." />
-            </section>
-        );
-    }
-
-    const orders = state?.orders ?? [];
-
-    if (orders.length === 0) {
-        return (
-            <section className="orders">
-                <h1 className="orders__title orders__title--centered">Mis pedidos</h1>
+            {isEmpty && (
                 <EmptyState
                     title="Todavía no hiciste ninguna compra"
                     description="Cuando compres un libro, vas a ver tu pedido acá."
@@ -85,21 +54,17 @@ function Orders(): JSX.Element {
                         <ButtonLink to="/catalogo">Ver el catálogo</ButtonLink>
                     }
                 />
-            </section>
-        );
-    }
+            )}
 
-    return (
-        <section className="orders">
-            <h1 className="orders__title">Mis pedidos</h1>
-
-            <ul className="orders__list">
-                {orders.map((order) => (
-                    <li key={order.id}>
-                        <OrderCard order={order} />
-                    </li>
-                ))}
-            </ul>
+            {!loading && !userOrdersError && userOrders.length > 0 && (
+                <ul className="orders__list">
+                    {userOrders.map((order) => (
+                        <li key={order.id}>
+                            <OrderCard order={order} />
+                        </li>
+                    ))}
+                </ul>
+            )}
         </section>
     );
 }
