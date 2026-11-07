@@ -96,6 +96,8 @@ export async function updateOrderStatus(
 // de sesión y la función serverless lee el carrito desde Firestore.
 // Por eso antes se guarda el carrito de la pantalla (si no, el guardado con
 // espera podría dejar al servidor con una versión vieja).
+// Los errores no se traducen acá: si no hay red, fetch lanza un TypeError y
+// llega tal cual al Provider, que arma el mensaje para la persona.
 export async function createOrder(items: CartItem[]): Promise<string> {
     const currentUser = auth.currentUser;
 
@@ -107,23 +109,17 @@ export async function createOrder(items: CartItem[]): Promise<string> {
 
     const token = await currentUser.getIdToken();
 
-    let response: Response;
-
-    try {
-        response = await fetch("/api/create-order", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-        });
-    } catch {
-        throw new Error(
-            "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo.",
-        );
-    }
+    const response = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+    });
 
     // Si la respuesta no es JSON (por ejemplo, una caída de la función),
     // data queda en null y se usa un mensaje genérico.
     const data: unknown = await response.json().catch(() => null);
 
+    // fetch no lanza error con un 4xx o 5xx: hay que mirar response.ok.
+    // El texto de error (por ejemplo, el 409 de sin stock) lo manda el servidor.
     if (!response.ok) {
         const message =
             isRecord(data) && typeof data.error === "string"

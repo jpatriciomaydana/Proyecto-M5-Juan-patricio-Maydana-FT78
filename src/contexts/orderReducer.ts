@@ -17,10 +17,18 @@ export interface SelectedOrderState {
     error: string | null;
 }
 
+// Estado de la compra en curso (también con el uid de quien la hizo).
+export interface PlacementState {
+    uid: string;
+    placing: boolean;
+    error: string | null;
+}
+
 export interface OrderState {
     user: OrderListState | null;
     admin: OrderListState | null;
     selected: SelectedOrderState | null;
+    placement: PlacementState | null;
     statusUpdatingId: string | null;
     statusUpdateError: string | null;
 }
@@ -33,6 +41,9 @@ export type OrderAction =
     | { type: "SELECTED_REQUESTED"; uid: string; orderId: string }
     | { type: "SELECTED_LOADED"; uid: string; orderId: string; order: Order }
     | { type: "SELECTED_FAILED"; uid: string; orderId: string; error: string }
+    | { type: "PLACE_ORDER_STARTED"; uid: string }
+    | { type: "PLACE_ORDER_SUCCEEDED"; uid: string }
+    | { type: "PLACE_ORDER_FAILED"; uid: string; error: string }
     | { type: "STATUS_UPDATE_STARTED"; orderId: string }
     | {
         type: "STATUS_UPDATE_SUCCEEDED";
@@ -45,6 +56,7 @@ export const initialOrderState: OrderState = {
     user: null,
     admin: null,
     selected: null,
+    placement: null,
     statusUpdatingId: null,
     statusUpdateError: null,
 };
@@ -142,6 +154,47 @@ export function orderReducer(
                     ...current,
                     loading: false,
                     order: null,
+                    error: action.error,
+                },
+            };
+        }
+
+        case "PLACE_ORDER_STARTED":
+            return {
+                ...state,
+                placement: { uid: action.uid, placing: true, error: null },
+            };
+
+        case "PLACE_ORDER_SUCCEEDED": {
+            const current = state.placement;
+
+            // Respuesta tardía de otra sesión: se ignora.
+            if (!current || current.uid !== action.uid) {
+                return state;
+            }
+
+            // Hay un pedido nuevo: las listas guardadas quedaron viejas.
+            // Al ponerlas en null, la pantalla que las use las vuelve a pedir.
+            return {
+                ...state,
+                user: null,
+                admin: null,
+                placement: { ...current, placing: false, error: null },
+            };
+        }
+
+        case "PLACE_ORDER_FAILED": {
+            const current = state.placement;
+
+            if (!current || current.uid !== action.uid) {
+                return state;
+            }
+
+            return {
+                ...state,
+                placement: {
+                    ...current,
+                    placing: false,
                     error: action.error,
                 },
             };

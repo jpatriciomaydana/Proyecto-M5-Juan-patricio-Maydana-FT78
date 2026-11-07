@@ -1,13 +1,15 @@
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer, useRef } from "react";
 import type { JSX, ReactNode } from "react";
 
 import { useAuthContext } from "../hooks/useAuthContext";
 import {
+    createOrder,
     getAllOrders,
     getOrderById,
     getUserOrders,
     updateOrderStatus,
 } from "../services/orderService";
+import type { CartItem } from "../types/cart";
 import type { Order, OrderStatus } from "../types/order";
 import { OrderContext } from "./orderContextObject";
 import type { OrderContextType } from "./orderContextObject";
@@ -22,6 +24,10 @@ const EMPTY_ORDERS: Order[] = [];
 const LOAD_ERROR_MESSAGE =
     "No pudimos cargar los pedidos. Intentá de nuevo en unos minutos.";
 const NOT_FOUND_MESSAGE = "No encontramos ese pedido.";
+const NETWORK_ERROR_MESSAGE =
+    "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo.";
+const PLACE_ORDER_ERROR_MESSAGE =
+    "No se pudo completar la compra. Intentá de nuevo.";
 
 function getErrorCode(error: unknown): string {
     return typeof error === "object" && error !== null && "code" in error
@@ -37,6 +43,21 @@ function getUpdateErrorMessage(error: unknown): string {
     return "No pudimos cambiar el estado del pedido. Intentá de nuevo en unos minutos.";
 }
 
+// Sin conexión, fetch lanza un TypeError. Cualquier otro Error trae un
+// mensaje pensado para la persona (por ejemplo, el de "sin stock" que manda
+// el servidor).
+function getPlaceOrderErrorMessage(error: unknown): string {
+    if (error instanceof TypeError) {
+        return NETWORK_ERROR_MESSAGE;
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return PLACE_ORDER_ERROR_MESSAGE;
+}
+
 // Guarda los pedidos y es la única capa que habla con orderService.
 // Las pantallas piden cosas por useOrders(). Cómo cambia el estado lo
 // decide orderReducer (función pura); acá se llama al servicio, se arman
@@ -47,12 +68,19 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
 
     const [state, dispatch] = useReducer(orderReducer, initialOrderState);
 
+    // Candado contra el doble envío. Un ref cambia al instante; el estado de
+    // React recién se actualiza al re-renderizar, y dos clics rápidos podrían
+    // colarse en ese intervalo.
+    const placingRef = useRef(false);
+
     // Solo se muestra lo que pertenece al usuario actual.
     const userList = uid !== null && state.user?.uid === uid ? state.user : null;
     const adminList =
         uid !== null && state.admin?.uid === uid ? state.admin : null;
     const selected =
         uid !== null && state.selected?.uid === uid ? state.selected : null;
+    const placement =
+        uid !== null && state.placement?.uid === uid ? state.placement : null;
 
     const loadUserOrders = useCallback((): void => {
         if (!uid) {
@@ -133,6 +161,35 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         [uid],
     );
 
+    const placeOrder = useCallback(
+        async (items: CartItem[]): Promise<string | null> => {
+            if (!uid || placingRef.current) {
+                return null;
+            }
+
+            placingRef.current = true;
+            dispatch({ type: "PLACE_ORDER_STARTED", uid });
+
+            try {
+                const orderId = await createOrder(items);
+
+                dispatch({ type: "PLACE_ORDER_SUCCEEDED", uid });
+                return orderId;
+            } catch (error) {
+                console.error("Error al confirmar la compra:", error);
+                dispatch({
+                    type: "PLACE_ORDER_FAILED",
+                    uid,
+                    error: getPlaceOrderErrorMessage(error),
+                });
+                return null;
+            } finally {
+                placingRef.current = false;
+            }
+        },
+        [uid],
+    );
+
     const changeStatus = useCallback(
         async (orderId: string, status: OrderStatus): Promise<void> => {
             dispatch({ type: "STATUS_UPDATE_STARTED", orderId });
@@ -168,6 +225,9 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
     const selectedOrderLoading =
         uid !== null && (selected === null || selected.loading);
 
+    const placingOrder = placement?.placing ?? false;
+    const placeOrderError = placement?.error ?? null;
+
     const { statusUpdatingId, statusUpdateError } = state;
 
     const value = useMemo<OrderContextType>(
@@ -184,6 +244,9 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             selectedOrderLoading,
             selectedOrderError,
             loadOrderById,
+            placeOrder,
+            placingOrder,
+            placeOrderError,
             changeStatus,
             statusUpdatingId,
             statusUpdateError,
@@ -201,6 +264,9 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             selectedOrderLoading,
             selectedOrderError,
             loadOrderById,
+            placeOrder,
+            placingOrder,
+            placeOrderError,
             changeStatus,
             statusUpdatingId,
             statusUpdateError,

@@ -8,7 +8,7 @@ import { CartIcon } from "../../components/common/Icons";
 import Spinner from "../../components/common/Spinner";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useCart } from "../../hooks/useCart";
-import { createOrder } from "../../services/orderService";
+import { useOrders } from "../../hooks/useOrders";
 import type { CartItem } from "../../types/cart";
 import { formatPrice } from "../../utils/orders";
 import "./Cart.css";
@@ -122,9 +122,14 @@ function CartRow({ item, locked }: CartRowProps): JSX.Element {
 function Cart(): JSX.Element {
     const { user } = useAuthContext();
     const { items, total, itemCount, loading, clearCart } = useCart();
+    const {
+        placeOrder,
+        placingOrder: submitting,
+        placeOrderError: orderError,
+    } = useOrders();
 
-    const [submitting, setSubmitting] = useState(false);
-    const [orderError, setOrderError] = useState("");
+    // El número del pedido recién creado: es solo de esta pantalla, así al
+    // salir y volver al carrito no reaparece la confirmación.
     const [orderId, setOrderId] = useState<string | null>(null);
 
     function handleClear(): void {
@@ -138,25 +143,15 @@ function Cart(): JSX.Element {
             return;
         }
 
-        setSubmitting(true);
-        setOrderError("");
+        // placeOrder nunca lanza error: devuelve el id o null si falló
+        // (el mensaje queda en orderError).
+        const newOrderId = await placeOrder(items);
 
-        try {
-            const newOrderId = await createOrder(items);
-
+        if (newOrderId) {
             // Compra hecha: el servidor ya vació el carrito de la cuenta.
             // Acá se vacía el de la pantalla.
             clearCart();
             setOrderId(newOrderId);
-        } catch (error) {
-            console.error("Error al confirmar la compra:", error);
-            setOrderError(
-                error instanceof Error
-                    ? error.message
-                    : "No se pudo completar la compra. Intentá de nuevo.",
-            );
-        } finally {
-            setSubmitting(false);
         }
     }
 

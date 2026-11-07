@@ -1,5 +1,6 @@
 import { createContext } from "react";
 
+import type { CartItem } from "../types/cart";
 import type { Order, OrderStatus } from "../types/order";
 
 export interface OrderContextType {
@@ -21,6 +22,13 @@ export interface OrderContextType {
     selectedOrderLoading: boolean;
     selectedOrderError: string | null;
     loadOrderById: (orderId: string) => void;
+
+    // Confirma la compra. Nunca lanza error: devuelve el id del pedido nuevo
+    // o null si falló (el mensaje queda en placeOrderError). Si ya hay una
+    // compra en curso, no hace nada y devuelve null.
+    placeOrder: (items: CartItem[]) => Promise<string | null>;
+    placingOrder: boolean;
+    placeOrderError: string | null;
 
     // Cambio de estado (admin). Nunca lanza error: si falla, deja el
     // mensaje en statusUpdateError. Al terminar bien, actualiza las listas.
