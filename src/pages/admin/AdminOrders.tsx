@@ -4,7 +4,7 @@ import type { JSX } from "react";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
-import { getAllOrders, updateOrderStatus } from "../../services/orderService";
+import { useOrders } from "../../hooks/useOrders";
 import type { Order, OrderStatus } from "../../types/order";
 import {
     ORDER_STATUSES,
@@ -31,83 +31,33 @@ function shortId(id: string): string {
     return id.length > 8 ? `${id.slice(0, 8)}…` : id;
 }
 
-function getUpdateErrorMessage(error: unknown): string {
-    if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "permission-denied"
-    ) {
-        return "No tenés permisos para cambiar el estado. Verificá que tu cuenta sea de administrador.";
-    }
-
-    return "No pudimos cambiar el estado del pedido. Intentá de nuevo en unos minutos.";
-}
-
 function AdminOrders(): JSX.Element {
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [filter, setFilter] = useState<StatusFilter>("all");
+    const {
+        adminOrders: orders,
+        adminOrdersLoading: loading,
+        adminOrdersError: error,
+        loadAdminOrders,
+        changeStatus,
+        statusUpdatingId: updatingId,
+        statusUpdateError: updateError,
+    } = useOrders();
 
-    // Pedido que está pidiendo confirmación para cancelarse y pedido que se
-    // está guardando en Firestore.
+    // Estado de UI que pertenece solo a esta pantalla.
+    const [filter, setFilter] = useState<StatusFilter>("all");
     const [confirmingCancelId, setConfirmingCancelId] = useState<string | null>(
         null,
     );
-    const [updatingId, setUpdatingId] = useState<string | null>(null);
-    const [updateError, setUpdateError] = useState<string | null>(null);
 
+    // La pantalla pide los pedidos al montarse; el Provider decide cómo.
     useEffect(() => {
-        let cancelled = false;
-
-        getAllOrders()
-            .then((data) => {
-                if (!cancelled) {
-                    setOrders(data);
-                }
-            })
-            .catch((caught: unknown) => {
-                console.error("No se pudieron cargar los pedidos:", caught);
-                if (!cancelled) {
-                    setError(
-                        "No pudimos cargar los pedidos. Intentá de nuevo en unos minutos.",
-                    );
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            });
-
-        // Si el admin sale de la página antes de que responda Firestore,
-        // se ignora el resultado.
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+        loadAdminOrders();
+    }, [loadAdminOrders]);
 
     async function applyStatus(order: Order, status: OrderStatus): Promise<void> {
-        setUpdateError(null);
-        setUpdatingId(order.id);
-
-        try {
-            await updateOrderStatus(order.id, status);
-
-            // Firestore ya confirmó: recién ahora cambiamos la fila en pantalla.
-            setOrders((previous) =>
-                previous.map((item) =>
-                    item.id === order.id ? { ...item, status } : item,
-                ),
-            );
-        } catch (caught) {
-            console.error("No se pudo cambiar el estado:", caught);
-            setUpdateError(getUpdateErrorMessage(caught));
-        } finally {
-            setUpdatingId(null);
-            setConfirmingCancelId(null);
-        }
+        // changeStatus nunca lanza error: si falla, deja el mensaje en
+        // statusUpdateError y las listas quedan como estaban.
+        await changeStatus(order.id, status);
+        setConfirmingCancelId(null);
     }
 
     function handleSelectChange(order: Order, value: string): void {
@@ -119,7 +69,6 @@ function AdminOrders(): JSX.Element {
 
         // Cancelar es definitivo y no repone stock: pide confirmación antes.
         if (nextStatus === "cancelled") {
-            setUpdateError(null);
             setConfirmingCancelId(order.id);
             return;
         }
