@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import type { JSX } from "react";
 
 import ButtonLink from "../../components/common/ButtonLink";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import Spinner from "../../components/common/Spinner";
+import { useOrders } from "../../hooks/useOrders";
 import { useProducts } from "../../hooks/useProducts";
-import { getAllOrders } from "../../services/orderService";
-import type { Order } from "../../types/order";
 import { ORDER_STATUSES, STATUS_LABELS, formatPrice } from "../../utils/orders";
 
 interface StatCardProps {
@@ -33,42 +32,21 @@ function AdminDashboard(): JSX.Element {
         loadProducts,
     } = useProducts();
 
-    // Pedidos: se cargan una vez, con el mismo patrón que AdminOrders.
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [ordersLoading, setOrdersLoading] = useState<boolean>(true);
-    const [ordersError, setOrdersError] = useState<string | null>(null);
+    // Pedidos: vienen del contexto (misma lista que usa AdminOrders).
+    const {
+        adminOrders: orders,
+        adminOrdersLoading: ordersLoading,
+        adminOrdersError: ordersError,
+        loadAdminOrders,
+    } = useOrders();
 
     useEffect(() => {
         loadProducts();
     }, [loadProducts]);
 
     useEffect(() => {
-        let cancelled = false;
-
-        getAllOrders()
-            .then((data) => {
-                if (!cancelled) {
-                    setOrders(data);
-                }
-            })
-            .catch((caught: unknown) => {
-                console.error("No se pudieron cargar los pedidos:", caught);
-                if (!cancelled) {
-                    setOrdersError(
-                        "No pudimos cargar los pedidos. Intentá de nuevo en unos minutos.",
-                    );
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setOrdersLoading(false);
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+        loadAdminOrders();
+    }, [loadAdminOrders]);
 
     const outOfStock = useMemo(
         () => products.filter((product) => product.stock <= 0).length,
