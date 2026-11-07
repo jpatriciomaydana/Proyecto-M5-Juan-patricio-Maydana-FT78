@@ -8,7 +8,7 @@ interface CartLine {
     quantity: number;
 }
 
-interface OrderItem {
+interface OrderItemSnapshot {
     productId: string;
     title: string;
     description: string;
@@ -119,7 +119,7 @@ export default async function handler(
             const productSnaps = await tx.getAll(...productRefs);
 
             // --- VALIDACIÓN ---
-            const items: OrderItem[] = [];
+            const items: OrderItemSnapshot[] = [];
             const newStocks: number[] = [];
             let total = 0;
 

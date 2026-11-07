@@ -13,7 +13,7 @@ import type { DocumentData } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { saveCartItems } from "./cartService";
 import type { CartItem } from "../types/cart";
-import type { Order, OrderItem, OrderStatus } from "../types/order";
+import type { Order, OrderItemSnapshot, OrderStatus } from "../types/order";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
@@ -30,7 +30,7 @@ function toOrder(id: string, data: DocumentData): Order {
     return {
         id,
         userId: String(data.userId ?? ""),
-        items: Array.isArray(data.items) ? (data.items as OrderItem[]) : [],
+        items: Array.isArray(data.items) ? (data.items as OrderItemSnapshot[]) : [],
         total: Number(data.total ?? 0),
         status: data.status as OrderStatus,
         createdAt,

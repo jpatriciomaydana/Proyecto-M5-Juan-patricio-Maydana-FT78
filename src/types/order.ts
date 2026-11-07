@@ -1,4 +1,4 @@
-export interface OrderItem {
+export interface OrderItemSnapshot {
     productId: string;
     title: string;
     description: string;
@@ -15,7 +15,7 @@ export type OrderStatus =
 export interface Order {
     id: string;
     userId: string;
-    items: OrderItem[];
+    items: OrderItemSnapshot[];
     total: number;
     status: OrderStatus;
     createdAt: Date;
