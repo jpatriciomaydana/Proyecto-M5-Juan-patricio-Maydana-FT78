@@ -14,6 +14,7 @@ import Catalog from "./pages/customer/Catalog";
 import ProductDetail from "./pages/customer/ProductDetail";
 import Cart from "./pages/customer/Cart";
 import Orders from "./pages/customer/Orders";
+import OrderDetail from "./pages/customer/OrderDetail";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminProductForm from "./pages/admin/AdminProductForm";
@@ -32,6 +33,7 @@ function App(): JSX.Element {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/mis-pedidos" element={<Orders />} />
+          <Route path="/mis-pedidos/:orderId" element={<OrderDetail />} />
         </Route>
       </Route>
 

@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { Link } from "react-router-dom";
 
 import type { Order } from "../../types/order";
 import { STATUS_LABELS, formatDate, formatPrice } from "../../utils/orders";
@@ -39,32 +40,12 @@ function OrderCard({ order }: OrderCardProps): JSX.Element {
                 <strong>{formatPrice(order.total)}</strong>
             </p>
 
-            <details className="order-card__details">
-                <summary className="order-card__summary">Ver detalle</summary>
-
-                <ul className="order-card__items">
-                    {order.items.map((item) => (
-                        <li key={item.productId} className="order-card__item">
-                            <p className="order-card__item-title">
-                                {item.title}
-                            </p>
-                            {item.description && (
-                                <p className="order-card__item-description">
-                                    {item.description}
-                                </p>
-                            )}
-                            <p className="order-card__item-line">
-                                <span>
-                                    {item.quantity} × {formatPrice(item.price)}
-                                </span>
-                                <strong>
-                                    {formatPrice(item.price * item.quantity)}
-                                </strong>
-                            </p>
-                        </li>
-                    ))}
-                </ul>
-            </details>
+            <Link
+                to={`/mis-pedidos/${order.id}`}
+                className="mt-3 inline-flex min-h-11 items-center font-semibold text-forest underline hover:text-forest-dark focus-visible:outline focus-visible:outline-3 focus-visible:outline-gold"
+            >
+                Ver detalle
+            </Link>
         </article>
     );
 }
