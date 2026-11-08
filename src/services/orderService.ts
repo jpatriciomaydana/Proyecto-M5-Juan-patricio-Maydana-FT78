@@ -3,6 +3,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    orderBy,
     query,
     Timestamp,
     updateDoc,
@@ -41,18 +42,23 @@ function sortNewestFirst(orders: Order[]): Order[] {
     return orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
-// Trae los pedidos de un cliente. El where("userId", "==", uid) es obligatorio:
-// las reglas de Firestore no filtran, rechazan toda consulta que pudiera
-// devolver pedidos ajenos. No usamos orderBy para no exigir un índice
-// compuesto; se ordena acá, del más nuevo al más viejo.
+// Trae los pedidos de un cliente, del más nuevo al más viejo. El
+// where("userId", "==", uid) es obligatorio: las reglas de Firestore no
+// filtran, rechazan toda consulta que pudiera devolver pedidos ajenos.
+// El orden lo hace Firestore con orderBy; eso exige un índice compuesto
+// (orders: userId ↑ + createdAt ↓), que vive en la consola de Firebase.
 export async function getUserOrders(uid: string): Promise<Order[]> {
     const ordersRef = collection(db, "orders");
-    const ordersQuery = query(ordersRef, where("userId", "==", uid));
+    const ordersQuery = query(
+        ordersRef,
+        where("userId", "==", uid),
+        orderBy("createdAt", "desc"),
+    );
 
     const snapshot = await getDocs(ordersQuery);
 
-    return sortNewestFirst(
-        snapshot.docs.map((document) => toOrder(document.id, document.data())),
+    return snapshot.docs.map((document) =>
+        toOrder(document.id, document.data()),
     );
 }
 
