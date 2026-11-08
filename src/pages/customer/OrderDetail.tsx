@@ -65,16 +65,18 @@ function OrderDetail(): JSX.Element {
             {/* Ticket: tarjeta angosta con separadores punteados. */}
             <article className="mt-4 rounded-md border border-line bg-white p-6 shadow-sm">
                 <header className="text-center">
-                    <p className="m-0 text-xs uppercase tracking-widest text-muted">
-                        Librería Patagonia
-                    </p>
+                    <img
+                        src="/logo.png"
+                        alt="Logo de Librería Patagonia"
+                        className="mx-auto h-20 w-auto"
+                    />
                     <h1 className="m-0 mt-1 font-serif text-2xl text-forest">
                         Comprobante de pedido
                     </h1>
                     <span
                         className={`mt-3 inline-block rounded-full border border-line px-3 py-1 text-sm ${order.status === "cancelled"
-                                ? "text-danger"
-                                : "text-forest"
+                            ? "text-danger"
+                            : "text-forest"
                             }`}
                     >
                         {STATUS_LABELS[order.status] ?? order.status}
