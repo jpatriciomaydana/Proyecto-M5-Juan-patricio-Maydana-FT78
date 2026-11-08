@@ -19,6 +19,8 @@ export interface ProductContextType {
     addProduct: (input: ProductInput) => Promise<string>;
     editProduct: (id: string, input: ProductInput) => Promise<void>;
     removeProduct: (id: string) => Promise<void>;
+    // Sube la imagen de un libro a S3 y devuelve su URL pública.
+    uploadImage: (file: File) => Promise<string>;
 }
 
 export const ProductContext = createContext<ProductContextType | undefined>(

@@ -3,6 +3,7 @@ import type { JSX, ReactNode } from "react";
 
 import { ProductContext } from "./productContextObject";
 import type { ProductContextType } from "./productContextObject";
+import { uploadProductImage } from "../services/imageService";
 import {
     createProduct,
     deleteProduct,
@@ -29,7 +30,7 @@ const LOAD_PRODUCT_ERROR_MESSAGE =
     "No pudimos cargar el libro. Intentá de nuevo en unos minutos.";
 
 // Guarda la lista completa de libros y es la única capa que habla con
-// productService. Las pantallas piden cosas por useProducts().
+// productService e imageService. Las pantallas piden cosas por useProducts().
 // La lista se mantiene al día sola: Firestore avisa cada cambio
 // (onSnapshot), así que agregar, editar o borrar no la actualiza a mano.
 function ProductProvider({ children }: ProductProviderProps): JSX.Element {
@@ -118,6 +119,11 @@ function ProductProvider({ children }: ProductProviderProps): JSX.Element {
         [],
     );
 
+    const uploadImage = useCallback(
+        (file: File): Promise<string> => uploadProductImage(file),
+        [],
+    );
+
     const selectedProduct = selected?.product ?? null;
     const selectedProductError = selected?.error ?? null;
     // Hasta que se pide el primer libro, se considera cargando.
@@ -136,6 +142,7 @@ function ProductProvider({ children }: ProductProviderProps): JSX.Element {
             addProduct,
             editProduct,
             removeProduct,
+            uploadImage,
         }),
         [
             products,
@@ -149,6 +156,7 @@ function ProductProvider({ children }: ProductProviderProps): JSX.Element {
             addProduct,
             editProduct,
             removeProduct,
+            uploadImage,
         ],
     );
 
