@@ -3,6 +3,7 @@ import type { JSX, ReactNode } from "react";
 
 import { useAuthContext } from "../hooks/useAuthContext";
 import {
+    cancelOrder,
     createOrder,
     getAllOrders,
     getOrderById,
@@ -28,6 +29,8 @@ const NETWORK_ERROR_MESSAGE =
     "No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo.";
 const PLACE_ORDER_ERROR_MESSAGE =
     "No se pudo completar la compra. Intentá de nuevo.";
+const CANCEL_ERROR_MESSAGE =
+    "No pudimos cancelar el pedido. Intentá de nuevo en unos minutos.";
 
 function getErrorCode(error: unknown): string {
     return typeof error === "object" && error !== null && "code" in error
@@ -56,6 +59,21 @@ function getPlaceOrderErrorMessage(error: unknown): string {
     }
 
     return PLACE_ORDER_ERROR_MESSAGE;
+}
+
+// Cancelar va por la función serverless, así que los errores llegan igual
+// que en la compra: TypeError sin red, o un Error con el mensaje del servidor
+// (por ejemplo, "Este pedido ya no se puede cancelar").
+function getCancelErrorMessage(error: unknown): string {
+    if (error instanceof TypeError) {
+        return NETWORK_ERROR_MESSAGE;
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return CANCEL_ERROR_MESSAGE;
 }
 
 // Guarda los pedidos y es la única capa que habla con orderService.
@@ -194,17 +212,27 @@ function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         async (orderId: string, status: OrderStatus): Promise<void> => {
             dispatch({ type: "STATUS_UPDATE_STARTED", orderId });
 
-            try {
-                await updateOrderStatus(orderId, status);
+            const isCancel = status === "cancelled";
 
-                // Firestore ya confirmó: recién ahora cambia el estado en
+            try {
+                // Cancelar pasa por la función serverless (repone el stock);
+                // las demás transiciones se escriben directo en Firestore.
+                if (isCancel) {
+                    await cancelOrder(orderId);
+                } else {
+                    await updateOrderStatus(orderId, status);
+                }
+
+                // El servidor ya confirmó: recién ahora cambia el estado en
                 // pantalla, en todos los lugares donde esté ese pedido.
                 dispatch({ type: "STATUS_UPDATE_SUCCEEDED", orderId, status });
             } catch (error) {
                 console.error("No se pudo cambiar el estado:", error);
                 dispatch({
                     type: "STATUS_UPDATE_FAILED",
-                    error: getUpdateErrorMessage(error),
+                    error: isCancel
+                        ? getCancelErrorMessage(error)
+                        : getUpdateErrorMessage(error),
                 });
             }
         },
