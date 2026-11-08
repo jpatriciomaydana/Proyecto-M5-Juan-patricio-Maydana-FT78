@@ -10,6 +10,12 @@ export interface ProductContextType {
     // Empieza a escuchar el catálogo. Solo la llama quien necesita la lista
     // completa (admin y buscador). Si ya está escuchando, no hace nada.
     loadProducts: () => void;
+    // Libro puntual (detalle y edición). Si no existe, selectedProduct es
+    // null, no está cargando y no hay error.
+    selectedProduct: Product | null;
+    selectedProductLoading: boolean;
+    selectedProductError: string | null;
+    loadProductById: (id: string) => void;
     addProduct: (input: ProductInput) => Promise<string>;
     editProduct: (id: string, input: ProductInput) => Promise<void>;
     removeProduct: (id: string) => Promise<void>;
