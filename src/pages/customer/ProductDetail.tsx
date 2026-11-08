@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { JSX } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import { useCart } from "../../hooks/useCart";
 import { getProductById } from "../../services/productService";
 import type { Product } from "../../types/product";
 import { formatPrice } from "../../utils/orders";
@@ -14,6 +15,7 @@ import "./ProductDetail.css";
 
 function ProductDetail(): JSX.Element {
     const { id } = useParams<{ id: string }>();
+    const { getQuantity } = useCart();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -90,6 +92,7 @@ function ProductDetail(): JSX.Element {
 
     const hasImage = product.imageUrl.trim() !== "" && !imageFailed;
     const outOfStock = product.stock <= 0;
+    const inCart = getQuantity(product.id);
 
     return (
         <section className="detail">
@@ -130,6 +133,15 @@ function ProductDetail(): JSX.Element {
                             ? "Sin stock"
                             : `Stock disponible: ${product.stock}`}
                     </p>
+
+                    {inCart > 0 && (
+                        <p
+                            className="mb-2 text-sm font-semibold text-forest"
+                            role="status"
+                        >
+                            En tu carrito: {inCart}
+                        </p>
+                    )}
 
                     <AddToCartButton product={product} />
 
