@@ -69,7 +69,8 @@ function AdminOrders(): JSX.Element {
             return;
         }
 
-        // Cancelar es definitivo y no repone stock: pide confirmación antes.
+        // Cancelar es definitivo (el servidor repone el stock): pide
+        // confirmación antes.
         if (nextStatus === "cancelled") {
             setConfirmingCancelId(order.id);
             return;
@@ -256,10 +257,9 @@ function AdminOrders(): JSX.Element {
                                                         >
                                                             <p className="admin-orders__confirm-text">
                                                                 ¿Cancelar este pedido?
-                                                                No se puede deshacer y
-                                                                no repone el stock:
-                                                                reponelo a mano desde
-                                                                Productos.
+                                                                No se puede deshacer.
+                                                                Los libros vuelven al
+                                                                stock.
                                                             </p>
                                                             <div className="admin-orders__actions">
                                                                 <button
