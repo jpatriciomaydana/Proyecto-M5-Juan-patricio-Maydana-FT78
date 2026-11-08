@@ -11,6 +11,7 @@ import {
     STATUS_LABELS,
     formatDate,
     formatPrice,
+    getNextStatuses,
 } from "../../utils/orders";
 import "./AdminOrders.css";
 
@@ -63,7 +64,8 @@ function AdminOrders(): JSX.Element {
     function handleSelectChange(order: Order, value: string): void {
         const nextStatus = parseStatus(value);
 
-        if (!nextStatus || nextStatus === order.status) {
+        // Solo se aceptan los estados permitidos desde el actual.
+        if (!nextStatus || !getNextStatuses(order.status).includes(nextStatus)) {
             return;
         }
 
@@ -161,7 +163,16 @@ function AdminOrders(): JSX.Element {
                                     const isConfirming =
                                         confirmingCancelId === order.id;
                                     const isUpdating = updatingId === order.id;
-                                    const isLocked = order.status === "cancelled";
+                                    // El selector muestra el estado actual y
+                                    // solo los que se pueden alcanzar desde él.
+                                    const nextStatuses = getNextStatuses(
+                                        order.status,
+                                    );
+                                    const selectableStatuses = [
+                                        order.status,
+                                        ...nextStatuses,
+                                    ];
+                                    const isLocked = nextStatuses.length === 0;
 
                                     return (
                                         <tr key={order.id}>
@@ -201,8 +212,9 @@ function AdminOrders(): JSX.Element {
 
                                                     {isLocked && (
                                                         <p className="admin-orders__hint">
-                                                            Un pedido cancelado ya
-                                                            no se puede modificar.
+                                                            Este pedido está
+                                                            cerrado y ya no se
+                                                            puede modificar.
                                                         </p>
                                                     )}
 
@@ -219,7 +231,7 @@ function AdminOrders(): JSX.Element {
                                                                 )
                                                             }
                                                         >
-                                                            {ORDER_STATUSES.map(
+                                                            {selectableStatuses.map(
                                                                 (status) => (
                                                                     <option
                                                                         key={status}
