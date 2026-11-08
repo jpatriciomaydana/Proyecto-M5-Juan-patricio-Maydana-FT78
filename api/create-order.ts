@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { adminAuth, adminDb } from "./_lib/firebaseAdmin.js";
+import { OrderError } from "./_lib/orderError.js";
 
 interface CartLine {
     productId: string;
@@ -14,16 +15,6 @@ interface OrderItemSnapshot {
     description: string;
     price: number;
     quantity: number;
-}
-
-// Error con código HTTP, para cortar la transacción con una respuesta clara.
-class OrderError extends Error {
-    status: number;
-
-    constructor(status: number, message: string) {
-        super(message);
-        this.status = status;
-    }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
