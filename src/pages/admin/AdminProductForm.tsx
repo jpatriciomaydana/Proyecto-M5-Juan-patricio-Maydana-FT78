@@ -3,8 +3,6 @@ import type { ChangeEvent, FormEvent, JSX, ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useProducts } from "../../hooks/useProducts";
-import { uploadProductImage } from "../../services/imageService";
-import { getProductById } from "../../services/productService";
 import { CATEGORIES } from "../../types/product";
 import type { CategoryId, Product, ProductInput } from "../../types/product";
 import "./AdminProductForm.css";
@@ -33,7 +31,6 @@ interface FormValues {
 }
 
 type FormErrors = Partial<Record<keyof FormValues, string>>;
-type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
 const EMPTY_VALUES: FormValues = {
     title: "",
@@ -48,6 +45,8 @@ const EMPTY_VALUES: FormValues = {
     publicationYear: "",
     firstEdition: false,
 };
+
+const NOT_FOUND_MESSAGE = "No encontramos el producto que querés editar.";
 
 function isCategoryId(value: string): value is CategoryId {
     return CATEGORIES.some((category) => category === value);
@@ -201,19 +200,29 @@ function Field({ id, label, error, children }: FieldProps): JSX.Element {
     );
 }
 
-function AdminProductForm(): JSX.Element {
-    const { id } = useParams();
+interface ProductFormFieldsProps {
+    // Si viene, se está editando ese libro; si no, se está creando uno.
+    productId?: string;
+    // Valores con los que arranca el formulario (vacíos al crear, los del
+    // libro ya cargado al editar).
+    initialValues: FormValues;
+}
+
+// El formulario en sí. Solo se monta cuando ya están los valores iniciales,
+// así que no hace falta rellenarlo desde un efecto.
+function ProductFormFields({
+    productId,
+    initialValues,
+}: ProductFormFieldsProps): JSX.Element {
     const navigate = useNavigate();
-    const isEditing = id !== undefined;
+    const isEditing = productId !== undefined;
 
-    // Crear y editar pasan por el contexto: es el que habla con el servicio.
-    const { addProduct, editProduct } = useProducts();
+    // Crear, editar y subir la imagen pasan por el contexto: es el que habla
+    // con los servicios.
+    const { addProduct, editProduct, uploadImage } = useProducts();
 
-    const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
+    const [values, setValues] = useState<FormValues>(initialValues);
     const [errors, setErrors] = useState<FormErrors>({});
-    const [status, setStatus] = useState<LoadStatus>(
-        isEditing ? "loading" : "ready"
-    );
     const [saving, setSaving] = useState<boolean>(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [uploading, setUploading] = useState<boolean>(false);
@@ -223,37 +232,6 @@ function AdminProductForm(): JSX.Element {
     const [failedPreviewUrl, setFailedPreviewUrl] = useState<string | null>(
         null
     );
-
-    // Solo en modo edición: trae el producto y rellena los campos.
-    useEffect(() => {
-        if (!id) {
-            return;
-        }
-
-        let cancelled = false;
-
-        getProductById(id)
-            .then((product) => {
-                if (cancelled) return;
-
-                if (!product) {
-                    setStatus("not-found");
-                    return;
-                }
-
-                setValues(toFormValues(product));
-                setStatus("ready");
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setStatus("error");
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [id]);
 
     function handleChange(
         event: ChangeEvent<
@@ -297,7 +275,7 @@ function AdminProductForm(): JSX.Element {
         setUploading(true);
 
         try {
-            const publicUrl = await uploadProductImage(file);
+            const publicUrl = await uploadImage(file);
 
             setValues((previous) => ({ ...previous, imageUrl: publicUrl }));
             setErrors((previous) => ({ ...previous, imageUrl: undefined }));
@@ -331,8 +309,8 @@ function AdminProductForm(): JSX.Element {
         setSaving(true);
 
         try {
-            if (id) {
-                await editProduct(id, input);
+            if (productId) {
+                await editProduct(productId, input);
             } else {
                 await addProduct(input);
             }
@@ -352,34 +330,6 @@ function AdminProductForm(): JSX.Element {
         return errors[name]
             ? { "aria-invalid": true, "aria-describedby": `${name}-error` }
             : {};
-    }
-
-    if (status === "loading") {
-        return (
-            <section className="product-form">
-                <p className="product-form__message" role="status">
-                    Cargando producto...
-                </p>
-            </section>
-        );
-    }
-
-    if (status === "not-found" || status === "error") {
-        return (
-            <section className="product-form">
-                <p
-                    className="product-form__message product-form__message--error"
-                    role="alert"
-                >
-                    {status === "not-found"
-                        ? "No encontramos el producto que querés editar."
-                        : "No pudimos cargar el producto. Intentá de nuevo en unos minutos."}
-                </p>
-                <Link to="/admin/productos" className="product-form__link">
-                    Volver al listado
-                </Link>
-            </section>
-        );
     }
 
     const previewUrl = values.imageUrl.trim();
@@ -624,6 +574,70 @@ function AdminProductForm(): JSX.Element {
                 </div>
             </form>
         </section>
+    );
+}
+
+// La pantalla pide el libro (si se está editando) y decide qué mostrar:
+// carga, error o el formulario. El Provider es quien habla con el servicio.
+function AdminProductForm(): JSX.Element {
+    const { id } = useParams();
+    const {
+        selectedProduct,
+        selectedProductLoading,
+        selectedProductError,
+        loadProductById,
+    } = useProducts();
+
+    // Solo en modo edición: pide el libro al montarse.
+    useEffect(() => {
+        if (id) {
+            loadProductById(id);
+        }
+    }, [id, loadProductById]);
+
+    // Crear: formulario vacío, no hay nada que cargar.
+    if (id === undefined) {
+        return <ProductFormFields initialValues={EMPTY_VALUES} />;
+    }
+
+    if (selectedProductLoading) {
+        return (
+            <section className="product-form">
+                <p className="product-form__message" role="status">
+                    Cargando producto...
+                </p>
+            </section>
+        );
+    }
+
+    // Solo se usa el libro si es el de la URL: durante un instante el
+    // contexto puede tener todavía otro.
+    if (
+        selectedProductError ||
+        selectedProduct === null ||
+        selectedProduct.id !== id
+    ) {
+        return (
+            <section className="product-form">
+                <p
+                    className="product-form__message product-form__message--error"
+                    role="alert"
+                >
+                    {selectedProductError ?? NOT_FOUND_MESSAGE}
+                </p>
+                <Link to="/admin/productos" className="product-form__link">
+                    Volver al listado
+                </Link>
+            </section>
+        );
+    }
+
+    return (
+        <ProductFormFields
+            key={id}
+            productId={id}
+            initialValues={toFormValues(selectedProduct)}
+        />
     );
 }
 
