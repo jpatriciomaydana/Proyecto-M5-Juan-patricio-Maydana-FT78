@@ -16,6 +16,14 @@ service cloud.firestore {
              && data.updatedAt == request.time;
     }
 
+    // Transiciones de estado permitidas en un pedido (mismo mapa que
+    // ALLOWED_TRANSITIONS en src/utils/orders.ts). Completado y Cancelado
+    // son finales.
+    function isValidTransition(from, to) {
+      return (from == 'pending' && to in ['processing', 'cancelled'])
+             || (from == 'processing' && to in ['completed', 'cancelled']);
+    }
+
     function productKeys() {
       return ['title', 'author', 'description', 'price', 'categoryId', 'stock',
               'imageUrl', 'isbn', 'publisher', 'publicationYear', 'firstEdition',
@@ -107,7 +115,7 @@ service cloud.firestore {
 
       allow update: if isAdmin()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-                    && request.resource.data.status in ['pending', 'processing', 'completed', 'cancelled'];
+                    && isValidTransition(resource.data.status, request.resource.data.status);
 
       allow create, delete: if false;
     }
