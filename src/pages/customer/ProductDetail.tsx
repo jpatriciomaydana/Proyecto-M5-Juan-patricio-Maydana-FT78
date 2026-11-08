@@ -3,8 +3,7 @@ import type { JSX } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useCart } from "../../hooks/useCart";
-import { getProductById } from "../../services/productService";
-import type { Product } from "../../types/product";
+import { useProducts } from "../../hooks/useProducts";
 import { formatPrice } from "../../utils/orders";
 import AddToCartButton from "../../components/cart/AddToCartButton";
 import ButtonLink from "../../components/common/ButtonLink";
@@ -16,46 +15,30 @@ import "./ProductDetail.css";
 function ProductDetail(): JSX.Element {
     const { id } = useParams<{ id: string }>();
     const { getQuantity } = useCart();
+    const {
+        selectedProduct,
+        selectedProductLoading: loading,
+        selectedProductError: error,
+        loadProductById,
+    } = useProducts();
 
-    const [product, setProduct] = useState<Product | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [imageFailed, setImageFailed] = useState(false);
 
+    // La pantalla pide el libro al montarse; el Provider decide cómo.
     useEffect(() => {
-        let cancelled = false;
-
-        async function loadProduct(): Promise<void> {
-            if (!id) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const result = await getProductById(id);
-                if (!cancelled) {
-                    setProduct(result);
-                }
-            } catch (err) {
-                console.error("Error al cargar el producto:", err);
-                if (!cancelled) {
-                    setError("No pudimos cargar el libro. Intentá nuevamente.");
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
+        if (id) {
+            loadProductById(id);
         }
+    }, [id, loadProductById]);
 
-        loadProduct();
+    // Solo se muestra el libro si es el de la URL: durante un instante el
+    // contexto puede tener todavía el libro anterior.
+    const product =
+        selectedProduct !== null && selectedProduct.id === id
+            ? selectedProduct
+            : null;
 
-        return () => {
-            cancelled = true;
-        };
-    }, [id]);
-
-    if (loading) {
+    if (id && loading) {
         return (
             <section className="detail">
                 <Spinner label="Cargando libro..." />
@@ -63,7 +46,7 @@ function ProductDetail(): JSX.Element {
         );
     }
 
-    if (error) {
+    if (id && error) {
         return (
             <section className="detail">
                 <ErrorMessage message={error} />
