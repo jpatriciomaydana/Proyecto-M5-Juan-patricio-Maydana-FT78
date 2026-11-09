@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { JSX } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import ButtonLink from "../../components/common/ButtonLink";
 import ErrorMessage from "../../components/common/ErrorMessage";
@@ -8,14 +8,25 @@ import Spinner from "../../components/common/Spinner";
 import { useOrders } from "../../hooks/useOrders";
 import { STATUS_LABELS, formatDate, formatPrice } from "../../utils/orders";
 
+// Lo que Cart.tsx manda al navegar tras una compra.
+interface OrderDetailLocationState {
+    justPurchased?: boolean;
+}
+
 function OrderDetail(): JSX.Element {
     const { orderId } = useParams();
+    const location = useLocation();
     const {
         selectedOrder,
         selectedOrderLoading,
         selectedOrderError,
         loadOrderById,
     } = useOrders();
+
+    // true solo si se llegó desde la compra (no desde "Mis pedidos").
+    const justPurchased =
+        (location.state as OrderDetailLocationState | null)?.justPurchased ===
+        true;
 
     // La pantalla pide el pedido al montarse; el Provider decide cómo.
     useEffect(() => {
@@ -61,6 +72,15 @@ function OrderDetail(): JSX.Element {
             >
                 ← Volver a mis pedidos
             </Link>
+
+            {justPurchased && (
+                <p
+                    role="status"
+                    className="m-0 mt-4 rounded-md border border-line bg-white px-4 py-3 text-center text-forest"
+                >
+                    <strong>¡Compra realizada!</strong> Registramos tu pedido.
+                </p>
+            )}
 
             {/* Ticket: tarjeta angosta con separadores punteados. */}
             <article className="mt-4 rounded-md border border-line bg-white p-6 shadow-sm">

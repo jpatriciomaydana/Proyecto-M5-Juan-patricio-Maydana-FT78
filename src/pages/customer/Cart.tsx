@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { JSX } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import ButtonLink from "../../components/common/ButtonLink";
 import EmptyState from "../../components/common/EmptyState";
@@ -120,6 +120,7 @@ function CartRow({ item, locked }: CartRowProps): JSX.Element {
 }
 
 function Cart(): JSX.Element {
+    const navigate = useNavigate();
     const { user } = useAuthContext();
     const { items, total, itemCount, loading, clearCart } = useCart();
     const {
@@ -127,10 +128,6 @@ function Cart(): JSX.Element {
         placingOrder: submitting,
         placeOrderError: orderError,
     } = useOrders();
-
-    // El número del pedido recién creado: es solo de esta pantalla, así al
-    // salir y volver al carrito no reaparece la confirmación.
-    const [orderId, setOrderId] = useState<string | null>(null);
 
     function handleClear(): void {
         if (window.confirm("¿Querés vaciar el carrito?")) {
@@ -149,9 +146,13 @@ function Cart(): JSX.Element {
 
         if (newOrderId) {
             // Compra hecha: el servidor ya vació el carrito de la cuenta.
-            // Acá se vacía el de la pantalla.
+            // Acá se vacía el de la pantalla y se va a la confirmación: el
+            // comprobante del pedido (/mis-pedidos/:orderId). El state avisa
+            // que se llega recién comprado, para mostrar "¡Compra realizada!".
             clearCart();
-            setOrderId(newOrderId);
+            navigate(`/mis-pedidos/${newOrderId}`, {
+                state: { justPurchased: true },
+            });
         }
     }
 
@@ -160,29 +161,6 @@ function Cart(): JSX.Element {
             <section className="cart-page">
                 <h1 className="cart-page__title">Carrito</h1>
                 <Spinner label="Cargando carrito…" />
-            </section>
-        );
-    }
-
-    // Va antes del carrito vacío: tras comprar, el carrito queda vacío
-    // y igual queremos mostrar la confirmación.
-    if (orderId) {
-        return (
-            <section className="cart-page">
-                <h1 className="cart-page__title">¡Compra realizada!</h1>
-
-                <div className="cart-success" role="status">
-                    <p className="cart-success__text">
-                        Registramos tu pedido. Es una compra simulada: no se
-                        realizó ningún cobro.
-                    </p>
-                    <p className="cart-success__id">
-                        Número de pedido: <strong>{orderId}</strong>
-                    </p>
-                    <Link to="/mis-pedidos" className="cart-success__link">
-                        Ver mis pedidos
-                    </Link>
-                </div>
             </section>
         );
     }
