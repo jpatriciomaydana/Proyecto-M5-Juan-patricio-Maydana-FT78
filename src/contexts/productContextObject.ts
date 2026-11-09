@@ -1,6 +1,19 @@
 import { createContext } from "react";
 
-import type { Product, ProductInput } from "../types/product";
+import type { CategoryId, Product, ProductInput } from "../types/product";
+
+// Página del catálogo tal como la ve la pantalla. No incluye el cursor
+// (eso es un detalle de Firestore): solo si hay más libros por cargar.
+export interface CatalogView {
+    // Categoría para la que se pidió esta página (null = "Todas").
+    categoryId: CategoryId | null;
+    products: Product[];
+    hasMore: boolean;
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    loadMoreError: string | null;
+}
 
 export interface ProductContextType {
     // Lista completa de libros, ordenada por título.
@@ -16,6 +29,15 @@ export interface ProductContextType {
     selectedProductLoading: boolean;
     selectedProductError: string | null;
     loadProductById: (id: string) => void;
+    // Catálogo paginado (modo "navegar"). null hasta que se pide la primera
+    // página. La pantalla debe comparar catalog.categoryId con la categoría
+    // que muestra: si no coinciden, todavía es la página de otra categoría.
+    catalog: CatalogView | null;
+    // Pide la primera página de una categoría (null = "Todas").
+    loadCatalog: (categoryId: CategoryId | null) => void;
+    // Pide la página siguiente de la categoría actual. Si no hay más o ya
+    // hay un pedido en curso, no hace nada.
+    loadMoreCatalog: () => void;
     addProduct: (input: ProductInput) => Promise<string>;
     editProduct: (id: string, input: ProductInput) => Promise<void>;
     removeProduct: (id: string) => Promise<void>;
