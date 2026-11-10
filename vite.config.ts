@@ -1,8 +1,13 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    // jsdom simula un navegador en memoria para poder renderizar componentes.
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+  },
 })
