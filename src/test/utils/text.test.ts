@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeText } from "./text";
+import { normalizeText } from "../../utils/text";
 
 describe("normalizeText", () => {
     it("saca las tildes", () => {
