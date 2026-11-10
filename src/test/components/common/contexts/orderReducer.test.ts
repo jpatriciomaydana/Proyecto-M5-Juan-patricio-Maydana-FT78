@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
     initialOrderState,
     orderReducer,
-} from "../../contexts/orderReducer";
-import type { OrderState } from "../../contexts/orderReducer";
-import type { Order } from "../../types/order";
+} from "../../../../contexts/orderReducer";
+import type { OrderState } from "../../../../contexts/orderReducer";
+import type { Order } from "../../../../types/order";
 
 function makeOrder(overrides: Partial<Order> = {}): Order {
     return {

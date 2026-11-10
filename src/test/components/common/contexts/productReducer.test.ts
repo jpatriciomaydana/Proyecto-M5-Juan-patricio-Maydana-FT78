@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
     initialProductState,
     productReducer,
-} from "../../contexts/productReducer";
-import type { CatalogState, ProductState } from "../../contexts/productReducer";
-import type { ProductsCursor } from "../../services/productService";
-import type { Product } from "../../types/product";
+} from "../../../../contexts/productReducer";
+import type { CatalogState, ProductState } from "../../../../contexts/productReducer";
+import type { ProductsCursor } from "../../../../services/productService";
+import type { Product } from "../../../../types/product";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
     return {

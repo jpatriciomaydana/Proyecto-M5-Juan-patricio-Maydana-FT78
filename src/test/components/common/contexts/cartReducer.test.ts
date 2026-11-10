@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { cartReducer, initialCartState } from "../../contexts/cartReducer";
-import type { CartReducerState } from "../../contexts/cartReducer";
-import type { CartItem } from "../../types/cart";
-import type { Product } from "../../types/product";
+import { cartReducer, initialCartState } from "../../../../contexts/cartReducer";
+import type { CartReducerState } from "../../../../contexts/cartReducer";
+import type { CartItem } from "../../../../types/cart";
+import type { Product } from "../../../../types/product";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
     return {
