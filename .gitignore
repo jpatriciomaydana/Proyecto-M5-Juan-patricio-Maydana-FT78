@@ -31,3 +31,6 @@ serviceAccount*.json
 
 .vercel
 .env*
+
+# Reporte de cobertura de los tests (se genera solo)
+coverage

@@ -9,5 +9,12 @@ export default defineConfig({
     // jsdom simula un navegador en memoria para poder renderizar componentes.
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    coverage: {
+      provider: 'v8',
+      // Mide solo el código de la app; no los tests ni su preparación.
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx'],
+      reporter: ['text', 'html'],
+    },
   },
 })
