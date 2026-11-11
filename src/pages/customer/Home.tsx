@@ -1,4 +1,3 @@
-
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 
@@ -35,10 +34,14 @@ function Home(): JSX.Element {
                 </div>
 
                 <div className="home-hero__decoration" aria-hidden="true">
+                    <img
+                        className="home-hero__decoration-logo"
+                        src="/logo.png"
+                        alt=""
+                    />
                     <span className="home-hero__decoration-label">
                         El placer de leer
                     </span>
-                    <span className="home-hero__decoration-mark">P&amp;P</span>
                 </div>
             </section>
 

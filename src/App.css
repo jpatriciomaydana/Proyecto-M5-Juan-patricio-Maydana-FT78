@@ -156,19 +156,22 @@
 
 .home-hero__decoration-label {
   position: absolute;
-  top: 25%;
-  color: #e6d4b3;
+  bottom: 28px;
+  color: var(--color-forest);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 13px;
   font-style: italic;
   letter-spacing: 1px;
 }
 
-.home-hero__decoration-mark {
-  color: var(--color-cream);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(56px, 8vw, 100px);
-  letter-spacing: -7px;
+.home-hero__decoration-logo {
+  position: absolute;
+  inset: 15px;
+  width: calc(100% - 30px);
+  height: calc(100% - 30px);
+  padding: 14px 14px 48px;
+  background: var(--color-cream);
+  object-fit: contain;
 }
 
 /* Sección introductoria */
